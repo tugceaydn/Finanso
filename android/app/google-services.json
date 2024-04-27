@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "992564397210",
+    "project_id": "finanso-459e8",
+    "storage_bucket": "finanso-459e8.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:992564397210:android:53e16b68da67c72f568b23",
+        "android_client_info": {
+          "package_name": "com.example.stock_market"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDj1rquzRS2ktmCHTaG6_lRzEuF2bnp3Gs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
