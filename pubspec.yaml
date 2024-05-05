@@ -40,6 +40,8 @@ dependencies:
   google_sign_in: ^6.2.1
   flutter_svg: ^2.0.10+1
   negative_padding: ^0.0.1
+  syncfusion_flutter_charts: ^25.1.42
+  url_launcher: ^6.2.6
 
 dev_dependencies:
   flutter_test:

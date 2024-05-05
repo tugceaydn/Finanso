@@ -4,9 +4,10 @@ import 'package:negative_padding/negative_padding.dart';
 import '../core/app_themes.dart';
 
 class BlueSection extends StatelessWidget {
-  const BlueSection({super.key, required this.child});
+  const BlueSection({super.key, required this.child, this.padding});
 
   final Widget child;
+  final double? padding;
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +16,9 @@ class BlueSection extends StatelessWidget {
       child: Container(
         color: primarySmoke,
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: padding != null
+              ? EdgeInsets.symmetric(vertical: padding!, horizontal: 32)
+              : const EdgeInsets.all(32),
           child: child,
         ),
       ),
