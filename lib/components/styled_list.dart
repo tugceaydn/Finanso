@@ -66,27 +66,28 @@ class StyledList extends StatelessWidget {
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  if (stockData.containsKey('sector'))
-                    StyledText(
-                      text: '${stockData['sector']}',
-                      type: 'body',
-                      color: textPrimary,
-                    ),
-                  if (stockData.containsKey('invested'))
-                    StyledText(
-                      text: '${stockData['invested']}',
-                      type: 'body',
-                      color: textPrimary,
-                    ),
-                  if (stockData.containsKey('profit'))
-                    StyledText(
-                      text: '${stockData['profit']}',
-                      type: 'functional',
-                      color:
-                          stockData['profit'][0] == '+' ? greenSolid : redSolid,
-                    ),
-                ],
+                children: stockData.containsKey('invested')
+                    ? [
+                        StyledText(
+                          text: '${stockData['invested']}',
+                          type: 'body',
+                          color: textPrimary,
+                        ),
+                        StyledText(
+                          text: '${stockData['profit']}',
+                          type: 'functional',
+                          color: stockData['profit'][0] == '+'
+                              ? greenSolid
+                              : redSolid,
+                        ),
+                      ]
+                    : [
+                        StyledText(
+                          text: '${stockData['sector']}',
+                          type: 'body',
+                          color: textPrimary,
+                        ),
+                      ],
               ),
             ],
           ),

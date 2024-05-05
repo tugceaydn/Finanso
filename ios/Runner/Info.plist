@@ -2,6 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>http</string>
+		<string>https</string>
+		<string>sms</string>
+  		<string>tel</string>
+	</array>
 	<key>GIDClientID</key>
 	<string>992564397210-ta1t530tnnshsvn1c2s2l19e0ni6qmck.apps.googleusercontent.com</string>
 	<!-- Google Sign-in Section -->
