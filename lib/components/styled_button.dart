@@ -112,7 +112,11 @@ class StyledButton extends StatelessWidget {
                   Size.fromWidth(double.maxFinite),
                 ),
                 backgroundColor: MaterialStatePropertyAll(
-                  isDisabled ? primarySmoke : primary,
+                  isDisabled
+                      ? primarySmoke
+                      : isActive!
+                          ? primary
+                          : Colors.white,
                 ),
               ),
           child: Stack(
@@ -122,6 +126,7 @@ class StyledButton extends StatelessWidget {
                 child: StyledText(
                   text: text,
                   type: 'button',
+                  color: isActive! ? Colors.white : Colors.black,
                 ),
               ),
               icon ?? Container(),

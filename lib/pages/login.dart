@@ -93,6 +93,7 @@ class _LoginPageState extends State<LoginPage> {
             password: _passwordInputController.text,
           ),
           text: 'Log in',
+          isActive: true,
         ),
         const SizedBox(height: 32),
         Row(
