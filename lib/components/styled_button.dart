@@ -55,23 +55,15 @@ class StyledButton extends StatelessWidget {
                   isActive! ? primary : primarySmoke,
                 ),
               ),
-          child: Stack(
-            alignment: const Alignment(1, 0),
-            children: [
-              Center(
-                child: Text(
-                  text,
-                  style: TextStyle(
-                    fontFamily: 'San Francisco',
-                    fontSize: 14,
-                    fontWeight: FontWeight.normal,
-                    height: 1.0,
-                    color: isActive! ? Colors.white : Colors.black,
-                  ),
-                ),
-              ),
-              icon ?? Container(),
-            ],
+          child: Text(
+            text,
+            style: TextStyle(
+              fontFamily: 'San Francisco',
+              fontSize: 14,
+              fontWeight: FontWeight.normal,
+              height: 1.0,
+              color: isActive! ? Colors.white : Colors.black,
+            ),
           ),
         );
       case 'delete':

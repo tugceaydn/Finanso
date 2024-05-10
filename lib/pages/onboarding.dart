@@ -19,7 +19,7 @@ const List<dynamic> screens = [
     ],
   },
   {
-    'key': 'rate',
+    'key': 'risk_profitability',
     'question': 'Which one is more you?',
     'image': 'assets/onboarding2.svg',
     'options': [
@@ -32,12 +32,17 @@ const List<dynamic> screens = [
     'question': 'Choose at least 3 sectors you are interested in',
     'image': 'assets/onboarding2.svg',
     'options': [
-      {'key': 'agriculture', 'value': 'Agriculture'},
-      {'key': 'manufacturing', 'value': 'Manufacturing'},
-      {'key': 'finance', 'value': 'Finance'},
       {'key': 'technology', 'value': 'Technology'},
-      {'key': 'industrial', 'value': 'Industrial'},
+      {'key': 'financial_services', 'value': 'Financial Services'},
+      {'key': 'industrials', 'value': 'Industrials'},
+      {'key': 'healthcare', 'value': 'Healthcare'},
+      {'key': 'consumer_cyclical', 'value': 'Consumer Cyclical'},
       {'key': 'energy', 'value': 'Energy'},
+      {'key': 'consumer_defensive', 'value': 'Consumer Defensive'},
+      {'key': 'basic_materials', 'value': 'Basic Materials'},
+      {'key': 'communication_services', 'value': 'Communication Services'},
+      {'key': 'utilities', 'value': 'Utilities'},
+      {'key': 'real_estate', 'value': 'Real Estate'},
     ],
   }
 ];
@@ -53,7 +58,7 @@ class _OnboardingState extends State<Onboarding> {
   int currentScreenIndex = 0;
   dynamic preferences = {
     'experience': '',
-    'rate': '',
+    'risk_profitability': '',
     'sectors': <String>[],
   };
 
@@ -71,39 +76,37 @@ class _OnboardingState extends State<Onboarding> {
 
   Widget _renderOptions(dynamic screen) {
     if (currentScreenIndex == 3) {
-      return Wrap(
-        spacing: 8,
-        children: screen['options']
-            .map<Widget>(
-              (option) => Column(
-                children: [
-                  StyledButton(
-                    handlePress: () {
-                      bool isActive =
-                          preferences[screen['key']].contains(option['key']);
+      return SizedBox(
+        width: double.infinity,
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 16,
+          children: screen['options']
+              .map<Widget>(
+                (option) => StyledButton(
+                  handlePress: () {
+                    bool isActive =
+                        preferences[screen['key']].contains(option['key']);
 
-                      List<String> newSectors = preferences['sectors'];
+                    List<String> newSectors = preferences['sectors'];
 
-                      if (isActive) {
-                        newSectors.removeWhere((item) => item == option['key']);
-                      } else {
-                        newSectors.add(option['key']);
-                      }
+                    if (isActive) {
+                      newSectors.removeWhere((item) => item == option['key']);
+                    } else {
+                      newSectors.add(option['key']);
+                    }
 
-                      setState(() {
-                        preferences = {...preferences, 'sectors': newSectors};
-                      });
-                    },
-                    text: option['value'],
-                    type: 'tertiary',
-                    isActive:
-                        preferences[screen['key']].contains(option['key']),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            )
-            .toList(),
+                    setState(() {
+                      preferences = {...preferences, 'sectors': newSectors};
+                    });
+                  },
+                  text: option['value'],
+                  type: 'tertiary',
+                  isActive: preferences[screen['key']].contains(option['key']),
+                ),
+              )
+              .toList(),
+        ),
       );
     }
 
@@ -112,18 +115,21 @@ class _OnboardingState extends State<Onboarding> {
           .map<Widget>(
             (option) => Column(
               children: [
-                StyledButton(
-                  handlePress: () {
-                    setState(() {
-                      preferences = {
-                        ...preferences,
-                        screen['key']: option['key']
-                      };
-                    });
-                  },
-                  text: option['value'],
-                  type: 'tertiary',
-                  isActive: preferences[screen['key']] == option['key'],
+                SizedBox(
+                  width: double.infinity,
+                  child: StyledButton(
+                    handlePress: () {
+                      setState(() {
+                        preferences = {
+                          ...preferences,
+                          screen['key']: option['key']
+                        };
+                      });
+                    },
+                    text: option['value'],
+                    type: 'tertiary',
+                    isActive: preferences[screen['key']] == option['key'],
+                  ),
                 ),
                 const SizedBox(height: 16),
               ],
