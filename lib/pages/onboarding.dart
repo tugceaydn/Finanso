@@ -1,7 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:provider/provider.dart';
 import 'package:stock_market/components/styled_text.dart';
 import 'package:stock_market/core/app_themes.dart';
+import 'package:http/http.dart' as http;
+import 'package:stock_market/core/jwt_provider.dart';
 
 import '../components/styled_button.dart';
 
@@ -32,17 +38,17 @@ const List<dynamic> screens = [
     'question': 'Choose at least 3 sectors you are interested in',
     'image': 'assets/onboarding2.svg',
     'options': [
-      {'key': 'technology', 'value': 'Technology'},
-      {'key': 'financial_services', 'value': 'Financial Services'},
-      {'key': 'industrials', 'value': 'Industrials'},
-      {'key': 'healthcare', 'value': 'Healthcare'},
-      {'key': 'consumer_cyclical', 'value': 'Consumer Cyclical'},
-      {'key': 'energy', 'value': 'Energy'},
-      {'key': 'consumer_defensive', 'value': 'Consumer Defensive'},
-      {'key': 'basic_materials', 'value': 'Basic Materials'},
-      {'key': 'communication_services', 'value': 'Communication Services'},
-      {'key': 'utilities', 'value': 'Utilities'},
-      {'key': 'real_estate', 'value': 'Real Estate'},
+      {'key': 'Technology', 'value': 'Technology'},
+      {'key': 'Financial Services', 'value': 'Financial Services'},
+      {'key': 'Industrials', 'value': 'Industrials'},
+      {'key': 'Healthcare', 'value': 'Healthcare'},
+      {'key': 'Consumer Cyclical', 'value': 'Consumer Cyclical'},
+      {'key': 'Energy', 'value': 'Energy'},
+      {'key': 'Consumer Defensive', 'value': 'Consumer Defensive'},
+      {'key': 'Basic Materials', 'value': 'Basic Materials'},
+      {'key': 'Communication Services', 'value': 'Communication Services'},
+      {'key': 'Utilities', 'value': 'Utilities'},
+      {'key': 'Real Estate', 'value': 'Real Estate'},
     ],
   }
 ];
@@ -56,6 +62,10 @@ class Onboarding extends StatefulWidget {
 
 class _OnboardingState extends State<Onboarding> {
   int currentScreenIndex = 0;
+  String? serverUrl = dotenv.env['SERVER_URL'];
+  String? token;
+  bool isLoading = false;
+
   dynamic preferences = {
     'experience': '',
     'risk_profitability': '',
@@ -65,6 +75,39 @@ class _OnboardingState extends State<Onboarding> {
   @override
   void initState() {
     super.initState();
+    token = Provider.of<JWTProvider>(context, listen: false).token;
+  }
+
+  Future<void> _postOnboard() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    dynamic investmentPreferences = {
+      'investment': {
+        'risk': preferences['risk_profitability'],
+        'profitability': preferences['risk_profitability'],
+        'experience': 'expert',
+        'sectors': preferences['sectors'],
+      }
+    };
+
+    Map<String, String> headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      dynamic response = await http.post(
+        Uri.parse('$serverUrl/onboard'),
+        headers: headers,
+        body: jsonEncode(investmentPreferences),
+      );
+      //TODO :: if (response.statusCode == 200) navigate
+      print(response);
+    } catch (error) {
+      throw Exception(error);
+    }
   }
 
   bool _validateStep() {
@@ -202,7 +245,7 @@ class _OnboardingState extends State<Onboarding> {
             handlePress: () => _onNextScreen(),
             text: buttonText,
             type: 'secondary',
-            isDisabled: _validateStep(),
+            isDisabled: _validateStep() || isLoading,
           ),
           const SizedBox(height: 16),
           const StyledText(
@@ -236,6 +279,10 @@ class _OnboardingState extends State<Onboarding> {
   }
 
   void _onNextScreen() {
+    if (currentScreenIndex == 3) {
+      _postOnboard();
+    }
+
     setState(() {
       if (currentScreenIndex < screens.length) {
         currentScreenIndex++;
@@ -255,6 +302,9 @@ class _OnboardingState extends State<Onboarding> {
           bottom: 32,
           child: _renderProgress(),
         ),
+        isLoading
+            ? const CircularProgressIndicator(color: primary)
+            : Container(),
         // TODO :: isLoading && positioned -> circularProgress
       ],
     );

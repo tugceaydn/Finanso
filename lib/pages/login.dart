@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stock_market/core/app_themes.dart';
+import 'package:stock_market/pages/onboarding.dart';
 
 import '../components/logo.dart';
 import '../components/styled_button.dart';
@@ -116,7 +117,14 @@ class _LoginPageState extends State<LoginPage> {
         ),
         const SizedBox(height: 32),
         StyledButton(
-          handlePress: () => AuthService().signInWithGoogle(),
+          handlePress: () {
+            AuthService().signInWithGoogle();
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => const Onboarding(),
+              ),
+            );
+          },
           text: 'Sign in with Google',
           type: 'secondary',
         ),

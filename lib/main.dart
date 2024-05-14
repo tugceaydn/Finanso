@@ -1,13 +1,17 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:stock_market/components/wrapper.dart';
 import 'package:stock_market/core/app_themes.dart';
+import 'package:stock_market/core/jwt_provider.dart';
 import 'package:stock_market/pages/for_you.dart';
 import 'package:stock_market/pages/home_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:stock_market/pages/login.dart';
+import 'package:stock_market/pages/onboarding.dart';
 import 'package:stock_market/pages/profile.dart';
 import 'package:stock_market/pages/search.dart';
+import 'package:stock_market/user_auth/generate_token.dart';
 import 'core/firebase_options.dart';
 import 'package:provider/provider.dart';
 import 'core/user_provider.dart';
@@ -19,8 +23,13 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(ChangeNotifierProvider(
-    create: (context) => UserProvider(),
+  await dotenv.load();
+
+  runApp(MultiProvider(
+    providers: [
+      ChangeNotifierProvider(create: (context) => UserProvider()),
+      ChangeNotifierProvider(create: (context) => JWTProvider()),
+    ],
     child: const Main(),
   ));
 }
@@ -49,13 +58,16 @@ class _MainState extends State<Main> {
   void initState() {
     super.initState();
 
-    FirebaseAuth.instance.userChanges().listen((User? user) {
+    FirebaseAuth.instance.userChanges().listen((User? user) async {
       if (user == null) {
         _selectedPageIndex = 0;
         isUserLoading = false;
       }
 
       Provider.of<UserProvider>(context, listen: false).setUser(user);
+      String? token = await generateJWT();
+      // ignore: use_build_context_synchronously
+      Provider.of<JWTProvider>(context, listen: false).setToken(token);
 
       if (isUserLoading || user != null) {
         setState(() {
@@ -131,6 +143,12 @@ class _MainState extends State<Main> {
     );
   }
 
+  Widget _onboardingScreen() {
+    return const Wrapper(
+      child: Onboarding(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     User? user = Provider.of<UserProvider>(context).user;
@@ -145,6 +163,7 @@ class _MainState extends State<Main> {
           : user == null
               ? _authScreen()
               : _mainScreen(),
+      // : _onboardingScreen(),
     );
   }
 }

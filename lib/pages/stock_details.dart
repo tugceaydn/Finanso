@@ -81,40 +81,40 @@ class _StockDetails extends State<StockDetails> {
   bool isTrendCalculating = true;
   String selectedRange = '1W';
 
-  void setSelectedRange(String range) {
+  void _setSelectedRange(String range) {
     setState(() {
       selectedRange = range;
     });
   }
 
-  void setIsForecastActive(bool isActive) {
+  void _setIsForecastActive(bool isActive) {
     setState(() {
       isForecastActive = isActive;
     });
   }
 
-  void setIsTrendCalculating(bool isCalculating) {
+  void _setIsTrendCalculating(bool isCalculating) {
     setState(() {
       isTrendCalculating = isCalculating;
     });
   }
 
-  void setIsStockTrendIncrease(bool isIncrease) {
+  void _setIsStockTrendIncrease(bool isIncrease) {
     setState(() {
       isStockTrendIncrease = isIncrease;
     });
   }
 
-  void calculateStockTrend(double start, double end) {
-    setIsTrendCalculating(true);
+  void _calculateStockTrend(double start, double end) {
+    _setIsTrendCalculating(true);
     if (end < start) {
-      setIsStockTrendIncrease(false);
+      _setIsStockTrendIncrease(false);
       print(false);
     } else {
-      setIsStockTrendIncrease(true);
+      _setIsStockTrendIncrease(true);
       print(true);
     }
-    setIsTrendCalculating(false);
+    _setIsTrendCalculating(false);
   }
 
   @override
@@ -122,11 +122,11 @@ class _StockDetails extends State<StockDetails> {
     isForecastActive = false;
     print(chartData[selectedRange]!.first.price);
     print(chartData[selectedRange]!.last.price);
-    calculateStockTrend(
+    _calculateStockTrend(
       chartData[selectedRange]!.first.price,
       chartData[selectedRange]!.last.price,
     );
-    setIsTrendCalculating(false);
+    _setIsTrendCalculating(false);
     super.initState();
   }
 
@@ -281,8 +281,8 @@ class _StockDetails extends State<StockDetails> {
           flex: 2,
           child: StyledButton(
             handlePress: () {
-              setIsForecastActive(!isForecastActive);
-              setSelectedRange("Forecast");
+              _setIsForecastActive(!isForecastActive);
+              _setSelectedRange("Forecast");
             },
             text: 'Forecast',
             isActive: isForecastActive,
@@ -300,7 +300,7 @@ class _StockDetails extends State<StockDetails> {
   }
 
   Widget _buildContent() {
-    calculateStockTrend(
+    _calculateStockTrend(
       chartData[selectedRange]!.first.price,
       chartData[selectedRange]!.last.price,
     );
@@ -315,8 +315,8 @@ class _StockDetails extends State<StockDetails> {
     final isSelected = range == selectedRange;
     return GestureDetector(
       onTap: () {
-        setSelectedRange(range);
-        setIsForecastActive(false);
+        _setSelectedRange(range);
+        _setIsForecastActive(false);
       },
       child: Container(
         margin: const EdgeInsets.all(8),
