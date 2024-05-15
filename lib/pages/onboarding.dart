@@ -1,7 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:provider/provider.dart';
 import 'package:stock_market/components/styled_text.dart';
 import 'package:stock_market/core/app_themes.dart';
+import 'package:http/http.dart' as http;
+import 'package:stock_market/core/jwt_provider.dart';
 
 import '../components/styled_button.dart';
 
@@ -19,7 +25,7 @@ const List<dynamic> screens = [
     ],
   },
   {
-    'key': 'rate',
+    'key': 'risk_profitability',
     'question': 'Which one is more you?',
     'image': 'assets/onboarding2.svg',
     'options': [
@@ -32,12 +38,17 @@ const List<dynamic> screens = [
     'question': 'Choose at least 3 sectors you are interested in',
     'image': 'assets/onboarding2.svg',
     'options': [
-      {'key': 'agriculture', 'value': 'Agriculture'},
-      {'key': 'manufacturing', 'value': 'Manufacturing'},
-      {'key': 'finance', 'value': 'Finance'},
-      {'key': 'technology', 'value': 'Technology'},
-      {'key': 'industrial', 'value': 'Industrial'},
-      {'key': 'energy', 'value': 'Energy'},
+      {'key': 'Technology', 'value': 'Technology'},
+      {'key': 'Financial Services', 'value': 'Financial Services'},
+      {'key': 'Industrials', 'value': 'Industrials'},
+      {'key': 'Healthcare', 'value': 'Healthcare'},
+      {'key': 'Consumer Cyclical', 'value': 'Consumer Cyclical'},
+      {'key': 'Energy', 'value': 'Energy'},
+      {'key': 'Consumer Defensive', 'value': 'Consumer Defensive'},
+      {'key': 'Basic Materials', 'value': 'Basic Materials'},
+      {'key': 'Communication Services', 'value': 'Communication Services'},
+      {'key': 'Utilities', 'value': 'Utilities'},
+      {'key': 'Real Estate', 'value': 'Real Estate'},
     ],
   }
 ];
@@ -51,15 +62,52 @@ class Onboarding extends StatefulWidget {
 
 class _OnboardingState extends State<Onboarding> {
   int currentScreenIndex = 0;
+  String? serverUrl = dotenv.env['SERVER_URL'];
+  String? token;
+  bool isLoading = false;
+
   dynamic preferences = {
     'experience': '',
-    'rate': '',
+    'risk_profitability': '',
     'sectors': <String>[],
   };
 
   @override
   void initState() {
     super.initState();
+    token = Provider.of<JWTProvider>(context, listen: false).token;
+  }
+
+  Future<void> _postOnboard() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    dynamic investmentPreferences = {
+      'investment': {
+        'risk': preferences['risk_profitability'],
+        'profitability': preferences['risk_profitability'],
+        'experience': 'expert',
+        'sectors': preferences['sectors'],
+      }
+    };
+
+    Map<String, String> headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      dynamic response = await http.post(
+        Uri.parse('$serverUrl/onboard'),
+        headers: headers,
+        body: jsonEncode(investmentPreferences),
+      );
+      //TODO :: if (response.statusCode == 200) navigate
+      print(response);
+    } catch (error) {
+      throw Exception(error);
+    }
   }
 
   bool _validateStep() {
@@ -71,39 +119,37 @@ class _OnboardingState extends State<Onboarding> {
 
   Widget _renderOptions(dynamic screen) {
     if (currentScreenIndex == 3) {
-      return Wrap(
-        spacing: 8,
-        children: screen['options']
-            .map<Widget>(
-              (option) => Column(
-                children: [
-                  StyledButton(
-                    handlePress: () {
-                      bool isActive =
-                          preferences[screen['key']].contains(option['key']);
+      return SizedBox(
+        width: double.infinity,
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 16,
+          children: screen['options']
+              .map<Widget>(
+                (option) => StyledButton(
+                  handlePress: () {
+                    bool isActive =
+                        preferences[screen['key']].contains(option['key']);
 
-                      List<String> newSectors = preferences['sectors'];
+                    List<String> newSectors = preferences['sectors'];
 
-                      if (isActive) {
-                        newSectors.removeWhere((item) => item == option['key']);
-                      } else {
-                        newSectors.add(option['key']);
-                      }
+                    if (isActive) {
+                      newSectors.removeWhere((item) => item == option['key']);
+                    } else {
+                      newSectors.add(option['key']);
+                    }
 
-                      setState(() {
-                        preferences = {...preferences, 'sectors': newSectors};
-                      });
-                    },
-                    text: option['value'],
-                    type: 'tertiary',
-                    isActive:
-                        preferences[screen['key']].contains(option['key']),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            )
-            .toList(),
+                    setState(() {
+                      preferences = {...preferences, 'sectors': newSectors};
+                    });
+                  },
+                  text: option['value'],
+                  type: 'tertiary',
+                  isActive: preferences[screen['key']].contains(option['key']),
+                ),
+              )
+              .toList(),
+        ),
       );
     }
 
@@ -112,18 +158,21 @@ class _OnboardingState extends State<Onboarding> {
           .map<Widget>(
             (option) => Column(
               children: [
-                StyledButton(
-                  handlePress: () {
-                    setState(() {
-                      preferences = {
-                        ...preferences,
-                        screen['key']: option['key']
-                      };
-                    });
-                  },
-                  text: option['value'],
-                  type: 'tertiary',
-                  isActive: preferences[screen['key']] == option['key'],
+                SizedBox(
+                  width: double.infinity,
+                  child: StyledButton(
+                    handlePress: () {
+                      setState(() {
+                        preferences = {
+                          ...preferences,
+                          screen['key']: option['key']
+                        };
+                      });
+                    },
+                    text: option['value'],
+                    type: 'tertiary',
+                    isActive: preferences[screen['key']] == option['key'],
+                  ),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -196,7 +245,7 @@ class _OnboardingState extends State<Onboarding> {
             handlePress: () => _onNextScreen(),
             text: buttonText,
             type: 'secondary',
-            isDisabled: _validateStep(),
+            isDisabled: _validateStep() || isLoading,
           ),
           const SizedBox(height: 16),
           const StyledText(
@@ -230,6 +279,10 @@ class _OnboardingState extends State<Onboarding> {
   }
 
   void _onNextScreen() {
+    if (currentScreenIndex == 3) {
+      _postOnboard();
+    }
+
     setState(() {
       if (currentScreenIndex < screens.length) {
         currentScreenIndex++;
@@ -249,6 +302,9 @@ class _OnboardingState extends State<Onboarding> {
           bottom: 32,
           child: _renderProgress(),
         ),
+        isLoading
+            ? const CircularProgressIndicator(color: primary)
+            : Container(),
         // TODO :: isLoading && positioned -> circularProgress
       ],
     );
