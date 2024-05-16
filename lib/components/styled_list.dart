@@ -4,8 +4,11 @@ import 'package:stock_market/core/app_themes.dart';
 
 class StyledList extends StatelessWidget {
   final List<Map<String, dynamic>> stockDataList;
+  final bool onlySector;
 
-  const StyledList({Key? key, required this.stockDataList}) : super(key: key);
+  const StyledList(
+      {Key? key, required this.stockDataList, required this.onlySector})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -45,19 +48,20 @@ class StyledList extends StatelessWidget {
                   CircleAvatar(
                     radius: 12,
                     backgroundColor: primarySmoke,
-                    backgroundImage: NetworkImage(stockData['photoUrl']),
+                    backgroundImage: NetworkImage(stockData['logo']),
                   ),
                   const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       StyledText(
-                        text: '${stockData['companyTicker']}',
+                        text: '${stockData['symbol']}',
                         type: 'body',
                         color: textPrimary,
                       ),
                       StyledText(
-                        text: '${stockData['currentPrice']}',
+                        text:
+                            '\$${stockData['price']['current'].toStringAsFixed(2)}',
                         type: 'functional',
                       )
                     ],
@@ -66,19 +70,35 @@ class StyledList extends StatelessWidget {
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
-                children: stockData.containsKey('invested')
+                children: !onlySector
                     ? [
                         StyledText(
-                          text: '${stockData['invested']}',
+                          text: stockData['invested'] > 0
+                              ? '\$${stockData['invested'].toStringAsFixed(2)}'
+                              : '-\$${(stockData['invested']).abs().toStringAsFixed(2)}',
                           type: 'body',
                           color: textPrimary,
                         ),
-                        StyledText(
-                          text: '${stockData['profit']}',
-                          type: 'functional',
-                          color: stockData['profit'][0] == '+'
-                              ? greenSolid
-                              : redSolid,
+                        Row(
+                          children: [
+                            StyledText(
+                              text: stockData['gain'] > 0
+                                  ? '+\$${stockData['gain'].toStringAsFixed(2)} '
+                                  : '-\$${(stockData['gain']).abs().toStringAsFixed(2)} ',
+                              type: 'functional',
+                              color:
+                                  stockData['gain'] > 0 ? greenSolid : redSolid,
+                            ),
+                            StyledText(
+                              text: stockData['gainPercent'] > 0
+                                  ? '(+${stockData['gainPercent'].toStringAsFixed(2)}%)'
+                                  : '(${stockData['gainPercent'].toStringAsFixed(2)}%)',
+                              type: 'functional',
+                              color: stockData['gainPercent'] > 0
+                                  ? greenSolid
+                                  : redSolid,
+                            ),
+                          ],
                         ),
                       ]
                     : [

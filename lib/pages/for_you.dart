@@ -362,7 +362,7 @@ class _ForYou extends State<ForYou> {
                         type: 'title_bold',
                       ),
                       const SizedBox(height: 16),
-                      StyledList(stockDataList: e.value),
+                      StyledList(stockDataList: e.value, onlySector: false),
                     ],
                   ),
                 )
@@ -375,7 +375,10 @@ class _ForYou extends State<ForYou> {
                       type: 'title_bold',
                     ),
                     const SizedBox(height: 16),
-                    StyledList(stockDataList: e.value),
+                    StyledList(
+                      stockDataList: e.value,
+                      onlySector: false,
+                    ),
                     const SizedBox(height: 16),
                   ],
                 );

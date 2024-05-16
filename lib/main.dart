@@ -15,6 +15,7 @@ import 'package:stock_market/user_auth/generate_token.dart';
 import 'core/firebase_options.dart';
 import 'package:provider/provider.dart';
 import 'core/user_provider.dart';
+import 'package:http/http.dart' as http;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,9 +44,29 @@ class Main extends StatefulWidget {
   State<Main> createState() => _MainState();
 }
 
+Future<bool> _isUserOnboarded(String? token) async {
+  String? serverUrl = dotenv.env['SERVER_URL'];
+
+  Map<String, String> headers = {
+    'Authorization': 'Bearer $token',
+    'Content-Type': 'application/json',
+  };
+
+  final response =
+      await http.get(Uri.parse('$serverUrl/lookup'), headers: headers);
+
+  if (response.statusCode == 200) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 class _MainState extends State<Main> {
   int _selectedPageIndex = 0;
   bool isUserLoading = true;
+  bool userOnboarded = false;
+  bool isOnboardingLoading = true;
 
   final List _pages = [
     const HomePage(),
@@ -60,20 +81,34 @@ class _MainState extends State<Main> {
 
     FirebaseAuth.instance.userChanges().listen((User? user) async {
       if (user == null) {
+        // user logged out
         _selectedPageIndex = 0;
+        userOnboarded = false;
+        isOnboardingLoading = true;
         isUserLoading = false;
       }
 
       Provider.of<UserProvider>(context, listen: false).setUser(user);
+
       String? token = await generateJWT();
+
       // ignore: use_build_context_synchronously
       Provider.of<JWTProvider>(context, listen: false).setToken(token);
 
       if (isUserLoading || user != null) {
+        // request
+        final onboarded = await _isUserOnboarded(token);
+
+        // ignore: use_build_context_synchronously
+        Provider.of<UserProvider>(context, listen: false)
+            .setOnboarded(onboarded);
+
         setState(() {
           if (isUserLoading) {
             isUserLoading = false;
           }
+
+          isOnboardingLoading = false;
 
           if (user != null && navigatorKey.currentState!.canPop()) {
             navigatorKey.currentState?.pop();
@@ -139,7 +174,7 @@ class _MainState extends State<Main> {
 
   Widget _loadingScreen() {
     return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+      body: Center(child: CircularProgressIndicator(color: primary)),
     );
   }
 
@@ -152,6 +187,7 @@ class _MainState extends State<Main> {
   @override
   Widget build(BuildContext context) {
     User? user = Provider.of<UserProvider>(context).user;
+    userOnboarded = Provider.of<UserProvider>(context).isOnboarded;
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -162,8 +198,11 @@ class _MainState extends State<Main> {
           ? _loadingScreen()
           : user == null
               ? _authScreen()
-              : _mainScreen(),
-      // : _onboardingScreen(),
+              : isOnboardingLoading
+                  ? _loadingScreen()
+                  : !userOnboarded
+                      ? _onboardingScreen()
+                      : _mainScreen(),
     );
   }
 }
