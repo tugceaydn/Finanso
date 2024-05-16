@@ -8,6 +8,7 @@ import 'package:stock_market/components/styled_text.dart';
 import 'package:stock_market/core/app_themes.dart';
 import 'package:http/http.dart' as http;
 import 'package:stock_market/core/jwt_provider.dart';
+import 'package:stock_market/core/user_provider.dart';
 
 import '../components/styled_button.dart';
 
@@ -103,8 +104,11 @@ class _OnboardingState extends State<Onboarding> {
         headers: headers,
         body: jsonEncode(investmentPreferences),
       );
-      //TODO :: if (response.statusCode == 200) navigate
-      print(response);
+      if (response.statusCode == 200) {
+        // ignore: use_build_context_synchronously
+        Provider.of<UserProvider>(context, listen: false).setOnboarded(true);
+      }
+      print(response.body);
     } catch (error) {
       throw Exception(error);
     }

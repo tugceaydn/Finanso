@@ -1,66 +1,17 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
 import 'package:stock_market/components/blue_section.dart';
+import 'package:stock_market/components/circular_progress.dart';
 import 'package:stock_market/components/styled_list.dart';
 import 'package:stock_market/components/styled_text.dart';
 import 'package:stock_market/core/app_themes.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
 
-final List<Map<String, dynamic>> stockDataList = [
-  {
-    'photoUrl':
-        'https://cdn.logojoy.com/wp-content/uploads/20240110153809/Black-tesla-logo-600x600.png',
-    'companyTicker': 'FSLA',
-    'currentPrice': '\$134.72',
-    'invested': '\$500.0',
-    'profit': '-\$1,23(+1,1%)',
-    'sector': 'Finance',
-  },
-  {
-    'photoUrl':
-        'https://cdn.logojoy.com/wp-content/uploads/20240110153809/Black-tesla-logo-600x600.png',
-    'companyTicker': 'TAPL',
-    'currentPrice': '\$134.72',
-    'invested': '\$500.0',
-    'profit': '+\$1,23(+1,1%)',
-    'sector': 'Technology',
-  },
-  {
-    'photoUrl':
-        'https://cdn.logojoy.com/wp-content/uploads/20240110153809/Black-tesla-logo-600x600.png',
-    'companyTicker': 'PPL',
-    'currentPrice': '\$134.72',
-    'invested': '\$500.0',
-    'profit': '+\$1,23(+1,1%)',
-    'sector': 'Popular',
-  },
-  {
-    'photoUrl':
-        'https://cdn.logojoy.com/wp-content/uploads/20240110153809/Black-tesla-logo-600x600.png',
-    'companyTicker': 'PLP',
-    'currentPrice': '\$134.72',
-    'invested': '\$500.0',
-    'profit': '+\$1,23(+1,1%)',
-    'sector': 'Popular',
-  },
-  {
-    'photoUrl':
-        'https://cdn.logojoy.com/wp-content/uploads/20240110153809/Black-tesla-logo-600x600.png',
-    'companyTicker': 'TCH',
-    'currentPrice': '\$134.72',
-    'invested': '\$500.0',
-    'profit': '+\$1,23(+1,1%)',
-    'sector': 'Technology',
-  },
-  {
-    'photoUrl':
-        'https://cdn.logojoy.com/wp-content/uploads/20240110153809/Black-tesla-logo-600x600.png',
-    'companyTicker': 'FTCH',
-    'currentPrice': '\$134.72',
-    'invested': '\$500.0',
-    'profit': '+\$1,23(+1,1%)',
-    'sector': 'Finance',
-  },
-];
+import '../core/jwt_provider.dart';
 
 final List<dynamic> newsList = [
   {
@@ -162,7 +113,11 @@ class ForYou extends StatefulWidget {
 }
 
 class _ForYou extends State<ForYou> {
+  String? serverUrl = dotenv.env['SERVER_URL'];
+  String? token;
+  bool isRecommendStockListLoading = true;
   late Map<String, List<Map<String, dynamic>>> stockList;
+  List<Map<String, Object>> recommendStocksList = [];
   int _selectedIndex = 0;
 
   void sortList() {
@@ -172,7 +127,7 @@ class _ForYou extends State<ForYou> {
     List<Map<String, dynamic>> popularCompanies = [];
     List<Map<String, dynamic>> otherCompanies = [];
 
-    for (var company in stockDataList) {
+    for (var company in recommendStocksList) {
       if (company['sector'] == 'Popular') {
         popularCompanies.add(company);
       } else {
@@ -181,11 +136,12 @@ class _ForYou extends State<ForYou> {
     }
 
     // Sort other companies alphabetically
-    otherCompanies
-        .sort((a, b) => a['companyTicker'].compareTo(b['companyTicker']));
+    otherCompanies.sort((a, b) => a['symbol'].compareTo(b['symbol']));
 
-    // Update the stockList map
-    stockList['Popular'] = popularCompanies;
+    // Update the stockList
+    if (popularCompanies.isNotEmpty) {
+      stockList['Popular'] = popularCompanies;
+    }
 
     // Populate the stockList map with companies
     for (var company in otherCompanies) {
@@ -197,10 +153,58 @@ class _ForYou extends State<ForYou> {
     }
   }
 
+  Future<void> _fetchRecommendedStocks() async {
+    setState(() {
+      isRecommendStockListLoading = true;
+    });
+    Map<String, String> headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse('$serverUrl/recommend/stocks'),
+        headers: headers,
+      );
+      Map<String, dynamic> responseData = jsonDecode(response.body);
+      List<dynamic> data = responseData['data'];
+      setState(() {
+        recommendStocksList =
+            data.map((item) => Map<String, Object>.from(item)).toList();
+        isRecommendStockListLoading = false;
+      });
+      _calculateTotalGain();
+      sortList();
+    } catch (error) {
+      throw Exception(error);
+    }
+  }
+
+  void _calculateTotalGain() {
+    for (var value in recommendStocksList) {
+      Map<String, dynamic>? valueMap = value;
+      List<dynamic> gains = _calculateCompanyGain(value);
+
+      value['invested'] = valueMap["price"]["current"];
+      value['gain'] = gains[0];
+      value['gainPercent'] = gains[1];
+    }
+  }
+
+  List<double> _calculateCompanyGain(Map<String, dynamic> companyData) {
+    double gain =
+        companyData["price"]["current"] - companyData["price"]["prev"];
+    double percent = (gain / companyData["price"]["prev"]) * 100;
+
+    return [gain, percent];
+  }
+
   @override
   void initState() {
-    sortList();
     super.initState();
+    token = Provider.of<JWTProvider>(context, listen: false).token;
+    _fetchRecommendedStocks();
   }
 
   Widget _buildTab(String title, int index) {
@@ -347,6 +351,7 @@ class _ForYou extends State<ForYou> {
 
   Widget _renderStockList() {
     int i = 0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: stockList.entries.map(
@@ -362,7 +367,7 @@ class _ForYou extends State<ForYou> {
                         type: 'title_bold',
                       ),
                       const SizedBox(height: 16),
-                      StyledList(stockDataList: e.value),
+                      StyledList(stockDataList: e.value, onlySector: false),
                     ],
                   ),
                 )
@@ -375,7 +380,7 @@ class _ForYou extends State<ForYou> {
                       type: 'title_bold',
                     ),
                     const SizedBox(height: 16),
-                    StyledList(stockDataList: e.value),
+                    StyledList(stockDataList: e.value, onlySector: false),
                     const SizedBox(height: 16),
                   ],
                 );
@@ -402,7 +407,11 @@ class _ForYou extends State<ForYou> {
           ],
         ),
         Container(
-          child: _selectedIndex == 0 ? _renderNews() : _renderStockList(),
+          child: _selectedIndex == 0
+              ? _renderNews()
+              : isRecommendStockListLoading
+                  ? const CircularProgress()
+                  : _renderStockList(),
         ),
       ],
     );
