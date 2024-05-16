@@ -1,6 +1,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:stock_market/components/circular_progress.dart';
 import 'package:stock_market/components/wrapper.dart';
 import 'package:stock_market/core/app_themes.dart';
 import 'package:stock_market/core/jwt_provider.dart';
@@ -173,9 +174,7 @@ class _MainState extends State<Main> {
   }
 
   Widget _loadingScreen() {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator(color: primary)),
-    );
+    return const Scaffold(body: CircularProgress());
   }
 
   Widget _onboardingScreen() {

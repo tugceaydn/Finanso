@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stock_market/components/chart.dart';
+import 'package:stock_market/components/circular_progress.dart';
 import 'package:stock_market/components/styled_button.dart';
 import 'package:stock_market/core/app_themes.dart';
 
@@ -364,11 +365,7 @@ class _StockDetails extends State<StockDetails> {
             color: primarySmoke,
           ),
           child: isTrendCalculating
-              ? const Center(
-                  child: CircularProgressIndicator(
-                    color: primary,
-                  ),
-                )
+              ? const CircularProgress()
               : Column(
                   children: [
                     _renderTopSectionOfCard(),

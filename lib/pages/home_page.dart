@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:stock_market/components/blue_section.dart';
+import 'package:stock_market/components/circular_progress.dart';
 import 'package:stock_market/components/styled_list.dart';
 import 'package:stock_market/components/styled_text.dart';
 import 'package:stock_market/core/app_themes.dart';
@@ -27,79 +28,6 @@ List<_StocksData> forecast_data = [
   _StocksData('+6 mn', 987),
   _StocksData('+1 yr', 1345),
 ];
-
-// final myInvestments = {
-//   "data": {
-//     "company_overviews": {
-//       "TSLA": {
-//         "price": {"current": 40.00, "prev": 177.5500030517578},
-//         "sector": "Consumer Cyclical"
-//       },
-//       "AAPL": {
-//         "price": {"current": 40.00, "prev": 177.5500030517578},
-//         "sector": "Consumer Cyclical"
-//       }
-//     },
-//     "investments": [
-//       {
-//         "_id": "66277f0d1544c636a8d0b98e",
-//         "amount": 2,
-//         "company_ticker": "TSLA",
-//         "date": "2024-04-23T00:00:00",
-//         "price": 10,
-//         "type": "buy",
-//         "user_id": "test-emir123"
-//       },
-//       {
-//         "_id": "66277f0d1544c636a8d0b98e",
-//         "amount": 2,
-//         "company_ticker": "AAPL",
-//         "date": "2024-04-23T00:00:00",
-//         "price": 10,
-//         "type": "buy",
-//         "user_id": "test-emir123"
-//       },
-//       {
-//         "_id": "66277f0d1544c636a8d0b98e",
-//         "amount": 3,
-//         "company_ticker": "TSLA",
-//         "date": "2024-04-23T00:00:00",
-//         "price": 20,
-//         "type": "buy",
-//         "user_id": "test-emir123"
-//       },
-//       {
-//         "_id": "66277f0d1544c636a8d0b98e",
-//         "amount": 3,
-//         "company_ticker": "TSLA",
-//         "date": "2024-04-23T00:00:00",
-//         "price": 30,
-//         "type": "sell",
-//         "user_id": "test-emir123"
-//       },
-//       {
-//         "_id": "66277f0d1544c636a8d0b98e",
-//         "amount": 2,
-//         "company_ticker": "TSLA",
-//         "date": "2024-04-23T00:00:00",
-//         "price": 25,
-//         "type": "buy",
-//         "user_id": "test-emir123"
-//       },
-//       {
-//         "_id": "66277f0d1544c636a8d0b98e",
-//         "amount": 2,
-//         "company_ticker": "TSLA",
-//         "date": "2024-04-23T00:00:00",
-//         "price": 40,
-//         "type": "sell",
-//         "user_id": "test-emir123"
-//       },
-//     ]
-//   },
-//   "message": null,
-//   "success": true
-// };
 
 class _HomePage extends State<HomePage> {
   User? user;
@@ -145,6 +73,7 @@ class _HomePage extends State<HomePage> {
   }
 
   void _fetchMyInvestments() async {
+    if (!mounted) return;
     setState(() {
       isLoading = true;
     });
@@ -156,6 +85,7 @@ class _HomePage extends State<HomePage> {
     try {
       final response =
           await http.get(Uri.parse('$serverUrl/investments'), headers: headers);
+      if (!mounted) return; // ????
       setState(() {
         myInvestments = jsonDecode(response.body);
         isInvestmentListEmpty =
@@ -274,7 +204,7 @@ class _HomePage extends State<HomePage> {
           ),
           const SizedBox(height: 16),
           isRecommendListLoading
-              ? const Center(child: CircularProgressIndicator(color: primary))
+              ? const CircularProgress()
               : StyledList(
                   stockDataList: recommendStocksList,
                   onlySector: true,
@@ -427,9 +357,7 @@ class _HomePage extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return isLoading
-        ? const Center(
-            child: CircularProgressIndicator(color: primary),
-          )
+        ? const CircularProgress()
         : isInvestmentListEmpty
             ? _renderInitialHomePage()
             : _renderPersonalizedHomePage();
