@@ -5,10 +5,14 @@ import 'package:stock_market/core/app_themes.dart';
 class StyledList extends StatelessWidget {
   final List<Map<String, dynamic>> stockDataList;
   final bool onlySector;
+  final bool isCurrentPriceIncluded;
 
-  const StyledList(
-      {Key? key, required this.stockDataList, required this.onlySector})
-      : super(key: key);
+  const StyledList({
+    super.key,
+    required this.stockDataList,
+    required this.onlySector,
+    this.isCurrentPriceIncluded = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -45,10 +49,13 @@ class StyledList extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  CircleAvatar(
-                    radius: 12,
-                    backgroundColor: primarySmoke,
-                    backgroundImage: NetworkImage(stockData['logo']),
+                  ClipOval(
+                    child: Image.network(
+                      stockData['logo'],
+                      fit: BoxFit.fitWidth,
+                      width: 24.0,
+                      height: 24.0,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Column(
@@ -59,11 +66,13 @@ class StyledList extends StatelessWidget {
                         type: 'body',
                         color: textPrimary,
                       ),
-                      StyledText(
-                        text:
-                            '\$${stockData['price']['current'].toStringAsFixed(2)}',
-                        type: 'functional',
-                      )
+                      isCurrentPriceIncluded
+                          ? StyledText(
+                              text:
+                                  '\$${stockData['price']['current'].toStringAsFixed(2)}',
+                              type: 'functional',
+                            )
+                          : Container()
                     ],
                   ),
                 ],

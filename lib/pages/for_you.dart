@@ -123,28 +123,17 @@ class _ForYou extends State<ForYou> {
   void sortList() {
     stockList = {};
 
-    // Separate popular companies from others
-    List<Map<String, dynamic>> popularCompanies = [];
-    List<Map<String, dynamic>> otherCompanies = [];
+    List<Map<String, dynamic>> companies = [];
 
     for (var company in recommendStocksList) {
-      if (company['sector'] == 'Popular') {
-        popularCompanies.add(company);
-      } else {
-        otherCompanies.add(company);
-      }
+      companies.add(company);
     }
 
     // Sort other companies alphabetically
-    otherCompanies.sort((a, b) => a['symbol'].compareTo(b['symbol']));
-
-    // Update the stockList
-    if (popularCompanies.isNotEmpty) {
-      stockList['Popular'] = popularCompanies;
-    }
+    companies.sort((a, b) => a['symbol'].compareTo(b['symbol']));
 
     // Populate the stockList map with companies
-    for (var company in otherCompanies) {
+    for (var company in companies) {
       var sector = company['sector'];
       if (!stockList.containsKey(sector)) {
         stockList[sector] = [];
@@ -367,7 +356,11 @@ class _ForYou extends State<ForYou> {
                         type: 'title_bold',
                       ),
                       const SizedBox(height: 16),
-                      StyledList(stockDataList: e.value, onlySector: false),
+                      StyledList(
+                        stockDataList: e.value,
+                        onlySector: false,
+                        isCurrentPriceIncluded: false,
+                      ),
                     ],
                   ),
                 )
@@ -380,7 +373,11 @@ class _ForYou extends State<ForYou> {
                       type: 'title_bold',
                     ),
                     const SizedBox(height: 16),
-                    StyledList(stockDataList: e.value, onlySector: false),
+                    StyledList(
+                      stockDataList: e.value,
+                      onlySector: false,
+                      isCurrentPriceIncluded: false,
+                    ),
                     const SizedBox(height: 16),
                   ],
                 );
