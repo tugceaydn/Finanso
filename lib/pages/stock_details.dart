@@ -1,86 +1,43 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
 import 'package:stock_market/components/chart.dart';
 import 'package:stock_market/components/circular_progress.dart';
 import 'package:stock_market/components/styled_button.dart';
 import 'package:stock_market/core/app_themes.dart';
+import 'package:http/http.dart' as http;
 
 import '../components/styled_text.dart';
+import '../core/jwt_provider.dart';
 
-final stockData = {
-  'ticker': 'TSLA',
-  'photoUrl':
-      'https://media.designrush.com/inspirations/269904/conversions/1.Tesla-Logo-Design-preview.jpg',
-  'name': 'Tesla',
-  'opening': 132.44,
-  'previous_closing': 130.24,
-  'risk': 'High',
-  'highest': 140.54,
-  'lowest': 120.43,
-  'profitability': 'Neutral',
-  'average_volume': '24 Mn',
-  'market_cap': '512 Bn',
-  'amount': 0.56,
-};
-
-final Map<String, List<StockData>> chartData = {
-  "1W": [
-    StockData('Mon', 1234),
-    StockData('Tue', 1456),
-    StockData('Wed', 987),
-    StockData('Thu', 1345),
-    StockData('Fri', 921),
-    StockData('Sat', 1412),
-    StockData('San', 1345),
-  ],
-  "1M": [
-    StockData('Mon', 1234),
-    StockData('Tue', 1456),
-    StockData('Wed', 987),
-    StockData('Thu', 1345),
-    StockData('Fri', 921),
-    StockData('Sat', 1412),
-    StockData('San', 1345),
-  ],
-  "1Y": [
-    StockData('Mon', 100),
-    StockData('Tue', 1456),
-    StockData('Wed', 987),
-    StockData('Thu', 1345),
-    StockData('Fri', 921),
-    StockData('Sat', 1412),
-    StockData('San', 1345),
-  ],
-  "5Y": [
-    StockData('Mon', 1234),
-    StockData('Tue', 1456),
-    StockData('Wed', 987),
-    StockData('Thu', 1345),
-    StockData('Fri', 921),
-    StockData('Sat', 1412),
-    StockData('San', 1345),
-  ],
-  "Forecast": [
-    StockData('Mon', 1234),
-    StockData('Tue', 1456),
-    StockData('Wed', 987),
-    StockData('Thu', 1345),
-    StockData('Fri', 921),
-    StockData('Sat', 1412),
-    StockData('San', 900),
-  ],
+final Map<String, List<Map<String, dynamic>>> chartData = {
+  "1W": [],
+  "1M": [],
+  "1Y": [],
+  "5Y": [],
+  "Forecast": [],
 };
 
 class StockDetails extends StatefulWidget {
-  const StockDetails({super.key});
+  final String symbol;
+  const StockDetails({super.key, required this.symbol});
 
   State<StockDetails> createState() => _StockDetails();
 }
 
 class _StockDetails extends State<StockDetails> {
+  late String symbol;
+  String? token;
+  String? serverUrl = dotenv.env['SERVER_URL'];
+  late Map<String, dynamic> stockData;
   late bool isForecastActive;
-  late bool isStockTrendIncrease;
+  late bool isStockTrendIncrease = false;
   bool isTrendCalculating = true;
+  bool isLoading = true;
   String selectedRange = '1W';
+  late double gain;
 
   void _setSelectedRange(String range) {
     setState(() {
@@ -100,35 +57,77 @@ class _StockDetails extends State<StockDetails> {
     });
   }
 
-  void _setIsStockTrendIncrease(bool isIncrease) {
+  Future<void> _fetchStockData() async {
+    if (!mounted) return;
     setState(() {
-      isStockTrendIncrease = isIncrease;
+      isLoading = true;
     });
-  }
+    Map<String, String> headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
 
-  void _calculateStockTrend(double start, double end) {
-    _setIsTrendCalculating(true);
-    if (end < start) {
-      _setIsStockTrendIncrease(false);
-      print(false);
-    } else {
-      _setIsStockTrendIncrease(true);
-      print(true);
+    try {
+      final response = await http.get(Uri.parse('$serverUrl/stocks/$symbol'),
+          headers: headers);
+      final body = jsonDecode(response.body);
+
+      setState(() {
+        stockData = body["data"];
+        chartData["1W"] = List<Map<String, dynamic>>.from(
+            stockData["historical_values"]["1w"]);
+        chartData["1M"] = List<Map<String, dynamic>>.from(
+            stockData["historical_values"]["1mo"]);
+        chartData["1Y"] = List<Map<String, dynamic>>.from(
+            stockData["historical_values"]["1y"]);
+        chartData["5Y"] = List<Map<String, dynamic>>.from(
+            stockData["historical_values"]["5y"]);
+        isLoading = false;
+      });
+      _initializeData();
+    } catch (error) {
+      throw Exception(error);
     }
-    _setIsTrendCalculating(false);
   }
 
   @override
   void initState() {
-    isForecastActive = false;
-    print(chartData[selectedRange]!.first.price);
-    print(chartData[selectedRange]!.last.price);
-    _calculateStockTrend(
-      chartData[selectedRange]!.first.price,
-      chartData[selectedRange]!.last.price,
-    );
-    _setIsTrendCalculating(false);
     super.initState();
+    isForecastActive = false;
+    symbol = widget.symbol;
+    token = Provider.of<JWTProvider>(context, listen: false).token;
+    _fetchStockData();
+  }
+
+  void _calculateStockTrend(double start, double end) {
+    gain = ((end - start) / start) * 100;
+    if (gain < 0) {
+      setState(() {
+        isStockTrendIncrease = false;
+      });
+    } else {
+      setState(() {
+        isStockTrendIncrease = true;
+      });
+    }
+  }
+
+  Future<void> _initializeData() async {
+    setState(() {
+      isTrendCalculating = true;
+    });
+    // Simulate a delay for fetching data or any other initialization
+    await Future.delayed(const Duration(milliseconds: 200));
+    final List<Map<String, dynamic>> selectedRangeData =
+        chartData[selectedRange]!;
+    _calculateStockTrend(
+      selectedRangeData[0]["close"],
+      selectedRangeData[selectedRangeData.length - 1]["close"],
+    );
+
+    setState(() {
+      isTrendCalculating = false;
+    });
   }
 
   Widget _buildTile(String title, String value, String? symbol, Color? color) {
@@ -159,12 +158,12 @@ class _StockDetails extends State<StockDetails> {
       children: [
         GridTile(
           child: _buildTile(
-              'Opening', stockData['opening'].toString(), "\$", null),
+              'Opening', stockData['last_open'].toStringAsFixed(2), "\$", null),
         ),
         GridTile(
           child: _buildTile(
             'Previous Closing',
-            stockData['previous_closing'].toString(),
+            stockData['last_close'].toStringAsFixed(2),
             "\$",
             null,
           ),
@@ -172,25 +171,25 @@ class _StockDetails extends State<StockDetails> {
         GridTile(
           child: _buildTile(
             'Risk',
-            stockData['risk'].toString(),
+            stockData['risk_label'].toString(),
             null,
-            stockData['risk'].toString() == "High" ? redSolid : primary,
+            stockData['risk_label'].toString() == "high" ? redSolid : primary,
           ),
         ),
         GridTile(
           child: _buildTile(
-              'Highest', stockData['highest'].toString(), "\$", null),
+              'Highest', stockData['last_high'].toStringAsFixed(2), "\$", null),
         ),
         GridTile(
-          child:
-              _buildTile('Lowest', stockData['lowest'].toString(), "\$", null),
+          child: _buildTile(
+              'Lowest', stockData['last_low'].toStringAsFixed(2), "\$", null),
         ),
         GridTile(
           child: _buildTile(
             'Profitability',
-            stockData['profitability'].toString(),
+            stockData['profitability_label'].toString(),
             null,
-            stockData['profitability'].toString() == "High"
+            stockData['profitability_label'].toString() == "high"
                 ? redSolid
                 : primary,
           ),
@@ -198,7 +197,7 @@ class _StockDetails extends State<StockDetails> {
         GridTile(
           child: _buildTile(
             'Avg Volume',
-            stockData['average_volume'].toString(),
+            stockData['last_volume'].toString(),
             null,
             null,
           ),
@@ -240,9 +239,10 @@ class _StockDetails extends State<StockDetails> {
                     width: 27,
                     child: CircleAvatar(
                       backgroundColor: primarySmoke,
-                      backgroundImage: NetworkImage(
-                        stockData['photoUrl'].toString(),
-                      ),
+                      // TODO :: add logo
+                      // backgroundImage: NetworkImage(
+                      //   stockData['photoUrl'].toString(),
+                      // ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -254,8 +254,8 @@ class _StockDetails extends State<StockDetails> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  const StyledText(
-                    text: '\$170,83 ',
+                  StyledText(
+                    text: '\$${stockData['last_close'].toStringAsFixed(2)}',
                     type: 'title_bold',
                   ),
                   const SizedBox(width: 4),
@@ -268,7 +268,9 @@ class _StockDetails extends State<StockDetails> {
                         color: isStockTrendIncrease ? greenSolid : redSolid,
                       ),
                       StyledText(
-                        text: '-1,15%',
+                        text: gain >= 0
+                            ? '+${gain.toStringAsFixed(2)}%'
+                            : '${gain.toStringAsFixed(2)}%',
                         color: isStockTrendIncrease ? greenSolid : redSolid,
                       ),
                     ],
@@ -301,10 +303,7 @@ class _StockDetails extends State<StockDetails> {
   }
 
   Widget _buildContent() {
-    _calculateStockTrend(
-      chartData[selectedRange]!.first.price,
-      chartData[selectedRange]!.last.price,
-    );
+    _initializeData();
 
     return SizedBox(
       height: 160,
@@ -313,7 +312,7 @@ class _StockDetails extends State<StockDetails> {
   }
 
   Widget _buildSelectableBox(String range) {
-    final isSelected = range == selectedRange;
+    final bool isSelected = range == selectedRange;
     return GestureDetector(
       onTap: () {
         _setSelectedRange(range);
@@ -420,24 +419,37 @@ class _StockDetails extends State<StockDetails> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.arrow_back),
-            const SizedBox(width: 12),
-            StyledText(
-              text: stockData['ticker'].toString(),
-              type: 'title_bold',
-            ),
-          ],
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: CommonThemes.appTheme,
+      home: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: isLoading
+                ? const CircularProgress()
+                : Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.arrow_back),
+                          const SizedBox(width: 12),
+                          StyledText(
+                            text: stockData['company_ticker'].toString(),
+                            type: 'title_bold',
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      _renderCard(),
+                      const SizedBox(height: 32),
+                      Expanded(child: _renderStockInfo()),
+                      _renderButtons(),
+                    ],
+                  ),
+          ),
         ),
-        const SizedBox(height: 32),
-        _renderCard(),
-        const SizedBox(height: 32),
-        Expanded(child: _renderStockInfo()),
-        _renderButtons(),
-      ],
+      ),
     );
   }
 }
