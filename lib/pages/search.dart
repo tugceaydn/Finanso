@@ -21,12 +21,13 @@ class Search extends StatefulWidget {
 }
 
 class _Search extends State<Search> {
-  String? serverUrl = dotenv.env['SERVER_URL'];
   String? token;
+  String? serverUrl = dotenv.env['SERVER_URL'];
+
+  Timer? _debounce;
+  bool isLoading = false;
   late TextEditingController _searchInputController;
   List<Map<String, Object>> recommendStocksList = [];
-  bool isLoading = false;
-  Timer? _debounce;
 
   void _fetchSearchedStocks() async {
     setState(() {
@@ -45,6 +46,7 @@ class _Search extends State<Search> {
         Uri.parse(url),
         headers: headers,
       );
+      if (!mounted) return;
 
       if (response.statusCode == 200) {
         Map<String, dynamic> responseData = jsonDecode(response.body);

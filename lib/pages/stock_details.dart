@@ -29,14 +29,18 @@ class StockDetails extends StatefulWidget {
 }
 
 class _StockDetails extends State<StockDetails> {
-  late String symbol;
   String? token;
   String? serverUrl = dotenv.env['SERVER_URL'];
+
+  late String symbol;
+  String selectedRange = '1W';
+
   late Map<String, dynamic> stockData;
+
+  bool isLoading = true;
   late bool isForecastActive;
   late bool isStockTrendIncrease = false;
-  bool isLoading = true;
-  String selectedRange = '1W';
+
   late double gain;
 
   Future<void> _fetchStockData() async {
@@ -52,6 +56,7 @@ class _StockDetails extends State<StockDetails> {
         Uri.parse('$serverUrl/stocks/$symbol'),
         headers: headers,
       );
+      if (!mounted) return;
 
       final body = jsonDecode(response.body);
 
