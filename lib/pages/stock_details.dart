@@ -8,6 +8,7 @@ import 'package:stock_market/components/circular_progress.dart';
 import 'package:stock_market/components/styled_button.dart';
 import 'package:stock_market/core/app_themes.dart';
 import 'package:http/http.dart' as http;
+import 'package:stock_market/main.dart';
 
 import '../components/styled_text.dart';
 import '../core/jwt_provider.dart';
@@ -34,57 +35,42 @@ class _StockDetails extends State<StockDetails> {
   late Map<String, dynamic> stockData;
   late bool isForecastActive;
   late bool isStockTrendIncrease = false;
-  bool isTrendCalculating = true;
   bool isLoading = true;
   String selectedRange = '1W';
   late double gain;
 
-  void _setSelectedRange(String range) {
-    setState(() {
-      selectedRange = range;
-    });
-  }
-
-  void _setIsForecastActive(bool isActive) {
-    setState(() {
-      isForecastActive = isActive;
-    });
-  }
-
-  void _setIsTrendCalculating(bool isCalculating) {
-    setState(() {
-      isTrendCalculating = isCalculating;
-    });
-  }
-
   Future<void> _fetchStockData() async {
     if (!mounted) return;
-    setState(() {
-      isLoading = true;
-    });
+
     Map<String, String> headers = {
       'Authorization': 'Bearer $token',
       'Content-Type': 'application/json',
     };
 
     try {
-      final response = await http.get(Uri.parse('$serverUrl/stocks/$symbol'),
-          headers: headers);
+      final response = await http.get(
+        Uri.parse('$serverUrl/stocks/$symbol'),
+        headers: headers,
+      );
+
       final body = jsonDecode(response.body);
 
+      stockData = body["data"];
+
+      chartData["1W"] =
+          List<Map<String, dynamic>>.from(stockData["historical_values"]["1w"]);
+      chartData["1M"] = List<Map<String, dynamic>>.from(
+          stockData["historical_values"]["1mo"]);
+      chartData["1Y"] =
+          List<Map<String, dynamic>>.from(stockData["historical_values"]["1y"]);
+      chartData["5Y"] =
+          List<Map<String, dynamic>>.from(stockData["historical_values"]["5y"]);
+
       setState(() {
-        stockData = body["data"];
-        chartData["1W"] = List<Map<String, dynamic>>.from(
-            stockData["historical_values"]["1w"]);
-        chartData["1M"] = List<Map<String, dynamic>>.from(
-            stockData["historical_values"]["1mo"]);
-        chartData["1Y"] = List<Map<String, dynamic>>.from(
-            stockData["historical_values"]["1y"]);
-        chartData["5Y"] = List<Map<String, dynamic>>.from(
-            stockData["historical_values"]["5y"]);
+        gain = _calculateGain();
         isLoading = false;
+        isStockTrendIncrease = gain >= 0;
       });
-      _initializeData();
     } catch (error) {
       throw Exception(error);
     }
@@ -93,41 +79,24 @@ class _StockDetails extends State<StockDetails> {
   @override
   void initState() {
     super.initState();
+
     isForecastActive = false;
     symbol = widget.symbol;
     token = Provider.of<JWTProvider>(context, listen: false).token;
+
     _fetchStockData();
   }
 
-  void _calculateStockTrend(double start, double end) {
-    gain = ((end - start) / start) * 100;
-    if (gain < 0) {
-      setState(() {
-        isStockTrendIncrease = false;
-      });
-    } else {
-      setState(() {
-        isStockTrendIncrease = true;
-      });
-    }
-  }
-
-  Future<void> _initializeData() async {
-    setState(() {
-      isTrendCalculating = true;
-    });
+  double _calculateGain({String range = '1W'}) {
     // Simulate a delay for fetching data or any other initialization
-    await Future.delayed(const Duration(milliseconds: 200));
-    final List<Map<String, dynamic>> selectedRangeData =
-        chartData[selectedRange]!;
-    _calculateStockTrend(
-      selectedRangeData[0]["close"],
-      selectedRangeData[selectedRangeData.length - 1]["close"],
-    );
+    // await Future.delayed(const Duration(milliseconds: 200));
 
-    setState(() {
-      isTrendCalculating = false;
-    });
+    final List<Map<String, dynamic>> selectedRangeData = chartData[range]!;
+
+    final start = selectedRangeData[0]["close"];
+    final end = selectedRangeData[selectedRangeData.length - 1]["close"];
+
+    return ((end - start) / start) * 100;
   }
 
   Widget _buildTile(String title, String value, String? symbol, Color? color) {
@@ -239,10 +208,7 @@ class _StockDetails extends State<StockDetails> {
                     width: 27,
                     child: CircleAvatar(
                       backgroundColor: primarySmoke,
-                      // TODO :: add logo
-                      // backgroundImage: NetworkImage(
-                      //   stockData['photoUrl'].toString(),
-                      // ),
+                      backgroundImage: NetworkImage(stockData['logo']),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -284,8 +250,10 @@ class _StockDetails extends State<StockDetails> {
           flex: 2,
           child: StyledButton(
             handlePress: () {
-              _setIsForecastActive(!isForecastActive);
-              _setSelectedRange("Forecast");
+              setState(() {
+                selectedRange = isForecastActive ? '1W' : 'Forecast';
+                isForecastActive = !isForecastActive;
+              });
             },
             text: 'Forecast',
             isActive: isForecastActive,
@@ -295,28 +263,16 @@ class _StockDetails extends State<StockDetails> {
     );
   }
 
-  Widget _buildChartContent(chartData) {
-    return Chart(
-      data: chartData,
-      color: isStockTrendIncrease ? greenSolid : redSolid,
-    );
-  }
-
-  Widget _buildContent() {
-    _initializeData();
-
-    return SizedBox(
-      height: 160,
-      child: _buildChartContent(chartData[selectedRange]),
-    );
-  }
-
   Widget _buildSelectableBox(String range) {
     final bool isSelected = range == selectedRange;
     return GestureDetector(
       onTap: () {
-        _setSelectedRange(range);
-        _setIsForecastActive(false);
+        setState(() {
+          gain = _calculateGain(range: range);
+          selectedRange = range;
+          isForecastActive = false;
+          isStockTrendIncrease = gain >= 0;
+        });
       },
       child: Container(
         margin: const EdgeInsets.all(8),
@@ -337,7 +293,13 @@ class _StockDetails extends State<StockDetails> {
   Widget _renderChartsSection() {
     return Column(
       children: [
-        _buildContent(),
+        SizedBox(
+          height: 160,
+          child: Chart(
+            data: chartData[selectedRange]!,
+            color: isStockTrendIncrease ? greenSolid : redSolid,
+          ),
+        ),
         const SizedBox(height: 32),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -357,21 +319,18 @@ class _StockDetails extends State<StockDetails> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          height: 360,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             color: primarySmoke,
           ),
-          child: isTrendCalculating
-              ? const CircularProgress()
-              : Column(
-                  children: [
-                    _renderTopSectionOfCard(),
-                    const SizedBox(height: 32),
-                    _renderChartsSection(),
-                  ],
-                ),
+          child: Column(
+            children: [
+              _renderTopSectionOfCard(),
+              const SizedBox(height: 32),
+              _renderChartsSection(),
+            ],
+          ),
         ),
         isForecastActive
             ? const Padding(
@@ -432,7 +391,12 @@ class _StockDetails extends State<StockDetails> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.arrow_back),
+                          InkWell(
+                            onTap: () {
+                              navigatorKey.currentState?.pop(context);
+                            },
+                            child: const Icon(Icons.arrow_back),
+                          ),
                           const SizedBox(width: 12),
                           StyledText(
                             text: stockData['company_ticker'].toString(),

@@ -8,6 +8,7 @@ class StyledInput extends StatelessWidget {
   final bool isDisabled;
   final String? Function(String?)? validatorFn;
   final void Function(String)? handleChange;
+  final Widget? prefixIcon;
 
   const StyledInput({
     super.key,
@@ -17,6 +18,7 @@ class StyledInput extends StatelessWidget {
     this.handleChange,
     this.isPassword = false,
     this.isDisabled = false,
+    this.prefixIcon,
   });
 
   @override
@@ -38,6 +40,7 @@ class StyledInput extends StatelessWidget {
         border: Theme.of(context).inputDecorationTheme.border,
         focusedBorder: Theme.of(context).inputDecorationTheme.focusedBorder,
         disabledBorder: Theme.of(context).inputDecorationTheme.disabledBorder,
+        prefixIcon: prefixIcon,
       ),
       style: body,
     );
