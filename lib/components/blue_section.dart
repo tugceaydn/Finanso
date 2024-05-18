@@ -14,6 +14,7 @@ class BlueSection extends StatelessWidget {
     return NegativePadding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Container(
+        width: double.infinity,
         color: primarySmoke,
         child: Padding(
           padding: padding != null

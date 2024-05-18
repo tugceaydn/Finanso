@@ -5,12 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:stock_market/components/blue_section.dart';
+import 'package:stock_market/components/chart.dart';
 import 'package:stock_market/components/circular_progress.dart';
 import 'package:stock_market/components/styled_list.dart';
 import 'package:stock_market/components/styled_text.dart';
 import 'package:stock_market/core/app_themes.dart';
 import 'package:stock_market/core/jwt_provider.dart';
-import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:http/http.dart' as http;
 
 import '../core/user_provider.dart';
@@ -22,11 +22,11 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePage();
 }
 
-List<_StocksData> forecast_data = [
-  _StocksData('Today', 1234),
-  _StocksData('+3 mn', 1456),
-  _StocksData('+6 mn', 987),
-  _StocksData('+1 yr', 1345),
+List<Map<String, dynamic>> forecast_data = [
+  {"close": 1234.0, "date": "+1m"},
+  {"close": 1456.0, "date": "+3m"},
+  {"close": 987.0, "date": "+6m"},
+  {"close": 1345.0, "date": "+1y"},
 ];
 
 class _HomePage extends State<HomePage> {
@@ -194,28 +194,31 @@ class _HomePage extends State<HomePage> {
   }
 
   Widget _renderRecommendedStocks() {
-    return BlueSection(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const StyledText(
-            text: 'You can start with',
-            type: 'title_bold',
-          ),
-          const SizedBox(height: 16),
-          isRecommendListLoading
-              ? const CircularProgress()
-              : StyledList(
-                  stockDataList: recommendStocksList,
-                  onlySector: true,
-                ),
-          const SizedBox(height: 16),
-          const StyledText(
-            text:
-                'Tap on a stock to see more details and enter a stock purchase',
-            type: 'functional',
-          )
-        ],
+    return SizedBox(
+      width: double.infinity,
+      child: BlueSection(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const StyledText(
+              text: 'You can start with',
+              type: 'title_bold',
+            ),
+            const SizedBox(height: 16),
+            isRecommendListLoading
+                ? const CircularProgress()
+                : StyledList(
+                    stockDataList: recommendStocksList,
+                    onlySector: true,
+                  ),
+            const SizedBox(height: 16),
+            const StyledText(
+              text:
+                  'Tap on a stock to see more details and enter a stock purchase',
+              type: 'functional',
+            )
+          ],
+        ),
       ),
     );
   }
@@ -288,20 +291,23 @@ class _HomePage extends State<HomePage> {
   }
 
   Widget _renderMyInvestments() {
-    return BlueSection(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const StyledText(
-            text: 'My Investments',
-            type: 'title_bold',
-          ),
-          const SizedBox(height: 16),
-          StyledList(
-            stockDataList: myInvestmentsList,
-            onlySector: false,
-          ),
-        ],
+    return SizedBox(
+      width: double.infinity,
+      child: BlueSection(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const StyledText(
+              text: 'My Investments',
+              type: 'title_bold',
+            ),
+            const SizedBox(height: 16),
+            StyledList(
+              stockDataList: myInvestmentsList,
+              onlySector: false,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -316,28 +322,9 @@ class _HomePage extends State<HomePage> {
           type: 'title_bold',
         ),
         const SizedBox(height: 16),
-        SfCartesianChart(
-          primaryXAxis: const CategoryAxis(
-            majorGridLines: MajorGridLines(width: 0),
-          ),
-          primaryYAxis: const NumericAxis(
-            isVisible: false,
-            initialVisibleMinimum: 987 - 200,
-          ),
-          legend: const Legend(isVisible: true),
-          tooltipBehavior: TooltipBehavior(enable: true),
-          series: <CartesianSeries<_StocksData, String>>[
-            LineSeries<_StocksData, String>(
-              color: primary,
-              dataSource: forecast_data,
-              xValueMapper: (_StocksData sales, _) => sales.date,
-              yValueMapper: (_StocksData sales, _) => sales.price,
-              isVisibleInLegend: false,
-              name: '',
-              // Enable data label
-              dataLabelSettings: const DataLabelSettings(isVisible: true),
-            )
-          ],
+        Chart(
+          data: forecast_data,
+          isLabelVisible: true,
         ),
       ],
     );
