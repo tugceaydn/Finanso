@@ -5,6 +5,7 @@ const header = TextStyle(
   fontSize: 26,
   fontWeight: FontWeight.bold,
   height: 1.1,
+  overflow: TextOverflow.ellipsis,
 );
 
 const titleBold = TextStyle(
@@ -12,6 +13,7 @@ const titleBold = TextStyle(
   fontSize: 18,
   fontWeight: FontWeight.bold,
   height: 1.25,
+  overflow: TextOverflow.ellipsis,
 );
 
 const title = TextStyle(
@@ -19,6 +21,7 @@ const title = TextStyle(
   fontSize: 18,
   fontWeight: FontWeight.normal,
   height: 1.25,
+  overflow: TextOverflow.ellipsis,
 );
 
 const caption = TextStyle(
@@ -26,6 +29,7 @@ const caption = TextStyle(
   fontSize: 14,
   fontWeight: FontWeight.bold,
   height: 1.4,
+  overflow: TextOverflow.ellipsis,
 );
 
 const body = TextStyle(
@@ -33,6 +37,7 @@ const body = TextStyle(
   fontSize: 14,
   fontWeight: FontWeight.normal,
   height: 1.4,
+  overflow: TextOverflow.ellipsis,
 );
 
 const bodySmoke = TextStyle(
@@ -40,6 +45,7 @@ const bodySmoke = TextStyle(
   fontSize: 14,
   fontWeight: FontWeight.normal,
   height: 1.4,
+  overflow: TextOverflow.ellipsis,
 );
 
 const button = TextStyle(
@@ -47,6 +53,7 @@ const button = TextStyle(
   fontSize: 14,
   fontWeight: FontWeight.normal,
   height: 1.0,
+  overflow: TextOverflow.ellipsis,
 );
 
 const functional = TextStyle(
@@ -54,6 +61,7 @@ const functional = TextStyle(
   fontSize: 12,
   fontWeight: FontWeight.normal,
   height: 1.25,
+  overflow: TextOverflow.ellipsis,
 );
 
 const small = TextStyle(
@@ -61,6 +69,7 @@ const small = TextStyle(
   fontSize: 10,
   fontWeight: FontWeight.normal,
   height: 1.25,
+  overflow: TextOverflow.ellipsis,
 );
 
 // Colors
