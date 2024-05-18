@@ -87,7 +87,7 @@ class _HomePage extends State<HomePage> {
       if (!mounted) return;
       setState(() {
         myInvestments = jsonDecode(response.body);
-        // isLoading = false;
+        isLoading = false;
       });
       if (myInvestments["data"]["investments"].length == 0) {
         // if user has no investments, recommend some

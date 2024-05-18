@@ -149,7 +149,7 @@ class _MainState extends State<Main> {
           ),
           BottomNavigationBarItem(
             activeIcon: Icon(Icons.search),
-            icon: Icon(Icons.search_outlined),
+            icon: Icon(Icons.explore_outlined),
             label: 'For You',
           ),
           BottomNavigationBarItem(
