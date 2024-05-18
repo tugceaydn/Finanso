@@ -22,34 +22,31 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePage();
 }
 
-List<Map<String, dynamic>> forecast_data = [
-  {"close": 1234.0, "date": "+1m"},
-  {"close": 1456.0, "date": "+3m"},
-  {"close": 987.0, "date": "+6m"},
-  {"close": 1345.0, "date": "+1y"},
-];
-
 class _HomePage extends State<HomePage> {
   User? user;
-  final List<Map<String, Object>> myInvestmentsList = [];
-  List<Map<String, Object>> recommendStocksList = [];
+  String? token;
+  String? serverUrl = dotenv.env['SERVER_URL'];
+
   Map<String, dynamic> myInvestments = {};
-  bool isInvestmentListEmpty = true;
+
+  List<Map<String, Object>> myInvestmentsList = [];
+  List<Map<String, dynamic>> forecastChartData = [];
+  List<Map<String, Object>> recommendStocksList = [];
 
   double totalGain = 0,
       totalGainPercentage = 0,
       totalExpend = 0,
       totalInvested = 0;
 
-  String? serverUrl = dotenv.env['SERVER_URL'];
-  String? token;
-  bool isRecommendListLoading = true;
   bool isLoading = true;
+  bool isForecastLoading = true;
+  bool isRecommendListLoading = true;
 
-  Future<void> _fetchRecommendedStocks() async {
+  void _fetchRecommendedStocks() async {
     setState(() {
       isRecommendListLoading = true;
     });
+
     Map<String, String> headers = {
       'Authorization': 'Bearer $token',
       'Content-Type': 'application/json',
@@ -60,8 +57,11 @@ class _HomePage extends State<HomePage> {
         Uri.parse('$serverUrl/recommend/stocks'),
         headers: headers,
       );
+      if (!mounted) return;
+
       Map<String, dynamic> responseData = jsonDecode(response.body);
       List<dynamic> data = responseData['data'];
+
       setState(() {
         recommendStocksList =
             data.map((item) => Map<String, Object>.from(item)).toList();
@@ -73,7 +73,6 @@ class _HomePage extends State<HomePage> {
   }
 
   void _fetchMyInvestments() async {
-    if (!mounted) return;
     setState(() {
       isLoading = true;
     });
@@ -85,19 +84,104 @@ class _HomePage extends State<HomePage> {
     try {
       final response =
           await http.get(Uri.parse('$serverUrl/investments'), headers: headers);
-      if (!mounted) return; // ????
+      if (!mounted) return;
       setState(() {
         myInvestments = jsonDecode(response.body);
-        isInvestmentListEmpty =
-            myInvestments["data"]["investments"].length == 0;
-        isLoading = false;
+        // isLoading = false;
       });
-      if (isInvestmentListEmpty) {
+      if (myInvestments["data"]["investments"].length == 0) {
+        // if user has no investments, recommend some
         _fetchRecommendedStocks();
       } else {
-        _calculateTotalGain();
+        _fetchForecastData();
+
+        myInvestmentsList = _calculateTotalGain({});
+
+        for (var element in myInvestmentsList) {
+          totalInvested += element['invested'] as double;
+          totalExpend += element['totalPrice'] as double;
+          totalGain += element['gain'] as double;
+        }
+
+        forecastChartData.add({'date': 'Now', 'close': totalInvested});
+
+        totalGainPercentage = (totalGain / totalExpend) * 100;
       }
     } catch (error) {
+      throw Exception(error);
+    }
+  }
+
+  void _fetchForecastData() async {
+    Map<String, String> headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
+
+    List<String> list =
+        myInvestments["data"]["company_overviews"].keys.toList();
+    dynamic body = {
+      "company_tickers": list,
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse('$serverUrl/forecast/'),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = jsonDecode(response.body);
+        final List<dynamic> companyForecasts = body['data'];
+
+        final Map<String, Map<String, double>> closeValuesOfCompaniesByMonth =
+            {};
+
+        for (var company in companyForecasts) {
+          // calculate forecast values for the chart
+          company['months'].forEach((month, closeValue) {
+            if (closeValuesOfCompaniesByMonth[month] == null) {
+              closeValuesOfCompaniesByMonth[month] = {};
+            }
+
+            closeValuesOfCompaniesByMonth[month]?[company['company_ticker']] =
+                closeValue;
+          });
+        }
+
+        List<int> monthsKeys = closeValuesOfCompaniesByMonth.keys
+            .map((key) => int.parse(key))
+            .toList();
+
+        monthsKeys.sort();
+
+        for (var month in monthsKeys) {
+          final closeValuesByCompany =
+              closeValuesOfCompaniesByMonth[month.toString()];
+
+          final allInvestments = _calculateTotalGain(closeValuesByCompany);
+          double totalBalance = 0;
+
+          for (var element in allInvestments) {
+            totalBalance += element['invested'] as double;
+          }
+
+          forecastChartData.add({
+            'date': '+${month}m',
+            'close': totalBalance,
+          });
+        }
+      }
+
+      setState(() {
+        isForecastLoading = false;
+      });
+    } catch (error) {
+      setState(() {
+        isForecastLoading = false;
+      });
       throw Exception(error);
     }
   }
@@ -110,66 +194,70 @@ class _HomePage extends State<HomePage> {
     _fetchMyInvestments();
   }
 
-  void _calculateTotalGain() {
+  List<Map<String, Object>> _calculateTotalGain(
+      Map<String, double>? staticTargetCloseByCompany) {
     Map<String, dynamic>? companies =
         myInvestments["data"]["company_overviews"];
+    final List<Map<String, Object>> investmentsList = [];
 
     companies?.forEach(
-      (key, value) {
+      (companyTicker, overview) {
         List<dynamic> curCompanyInvestments =
-            (myInvestments["data"] as Map<String, dynamic>?)?["investments"]
-                ?.where((investment) => investment["company_ticker"] == key)
+            (myInvestments["data"])["investments"]
+                .where((investment) =>
+                    investment["company_ticker"] == companyTicker)
                 .toList();
-        List<dynamic> gains = _calculateCompanyGain(curCompanyInvestments);
 
-        myInvestmentsList.add({
-          'logo': value["logo"],
-          'symbol': key,
-          'price': {'current': value?["price"]["current"]},
+        double targetClose = staticTargetCloseByCompany?[companyTicker] ??
+            overview["price"]["current"];
+        List<dynamic> gains =
+            _calculateCompanyGain(curCompanyInvestments, targetClose);
+
+        investmentsList.add({
+          'logo': overview["logo"],
+          'symbol': companyTicker,
+          'price': {'current': overview?["price"]["current"]},
           'invested': gains[0],
           'gain': gains[1],
           'gainPercent': gains[2],
+          'totalPrice': gains[3],
         });
       },
     );
+
+    return investmentsList;
   }
 
-  List<double> _calculateCompanyGain(List<dynamic> companyInvestments) {
-    num curAmount = 0, totalPrice = 0, totalAmount = 0;
+  List<double> _calculateCompanyGain(
+    List<dynamic> companyInvestments,
+    double targetClose,
+  ) {
+    double curAmount = 0, totalPrice = 0, totalAmount = 0;
     double avg = 0, unrealizedGain = 0, realizedGain;
-    for (final i in companyInvestments) {
-      if (i["type"] == "buy") {
-        curAmount += i["amount"];
-        totalAmount += i["amount"];
-        totalPrice += i["price"] * i["amount"];
+
+    for (final investment in companyInvestments) {
+      if (investment["type"] == "buy") {
+        curAmount += investment["amount"];
+        totalAmount += investment["amount"];
+        totalPrice += investment["price"] * investment["amount"];
       }
 
-      if (i["type"] == "sell") {
+      if (investment["type"] == "sell") {
         avg = totalPrice / totalAmount;
-        curAmount -= i["amount"];
-        unrealizedGain += (i["price"] - avg) * i["amount"];
+        curAmount -= investment["amount"];
+        unrealizedGain += (investment["price"] - avg) * investment["amount"];
       }
     }
+
     avg = totalPrice / totalAmount;
-    totalExpend += totalPrice;
 
-    String ticker = companyInvestments[0]["company_ticker"];
-    double cur =
-        (myInvestments["data"] as Map<String, dynamic>?)?["company_overviews"]
-                [ticker]["price"]["current"]
-            .toDouble();
+    realizedGain = curAmount.toDouble() * (targetClose - avg);
 
-    realizedGain = curAmount.toDouble() * (cur - avg);
-
-    double curInvested = unrealizedGain + (cur * curAmount);
+    double curInvested = unrealizedGain + (targetClose * curAmount);
     double curGain = realizedGain + unrealizedGain;
     double curGainPercent = (curGain / totalPrice) * 100;
 
-    totalInvested += curInvested;
-    totalGain += curGain;
-    totalGainPercentage = (totalGain / totalExpend) * 100;
-
-    return [curInvested, curGain, curGainPercent];
+    return [curInvested, curGain, curGainPercent, totalPrice];
   }
 
   Widget _renderInitialTopSection() {
@@ -223,7 +311,7 @@ class _HomePage extends State<HomePage> {
     );
   }
 
-  Widget _renderInitialHomePage() {
+  Widget _renderHomePageWithRecommendedStocks() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -265,18 +353,18 @@ class _HomePage extends State<HomePage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   StyledText(
-                    text: totalGain > 0
+                    text: totalGain >= 0
                         ? '+\$${totalGain.toStringAsFixed(2)} '
                         : '-\$${(totalGain).abs().toStringAsFixed(2)} ',
                     type: 'functional',
-                    color: totalGain > 0 ? greenLight : redLight,
+                    color: totalGain >= 0 ? greenLight : redLight,
                   ),
                   StyledText(
-                    text: totalGainPercentage > 0
+                    text: totalGainPercentage >= 0
                         ? '(+${totalGainPercentage.toStringAsFixed(2)}%)'
                         : '(${(totalGainPercentage).toStringAsFixed(2)}%)',
                     type: 'functional',
-                    color: totalGainPercentage > 0 ? greenLight : redLight,
+                    color: totalGainPercentage >= 0 ? greenLight : redLight,
                   ),
                   const StyledText(
                       text: 'Today', type: 'functional', color: background),
@@ -322,15 +410,17 @@ class _HomePage extends State<HomePage> {
           type: 'title_bold',
         ),
         const SizedBox(height: 16),
-        Chart(
-          data: forecast_data,
-          isLabelVisible: true,
-        ),
+        isForecastLoading
+            ? const CircularProgress()
+            : Chart(
+                data: forecastChartData,
+                isLabelVisible: true,
+              ),
       ],
     );
   }
 
-  Widget _renderPersonalizedHomePage() {
+  Widget _renderHomePageWithUserData() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -343,17 +433,12 @@ class _HomePage extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return isLoading
-        ? const CircularProgress()
-        : isInvestmentListEmpty
-            ? _renderInitialHomePage()
-            : _renderPersonalizedHomePage();
+    return Center(
+      child: isLoading
+          ? const CircularProgress()
+          : myInvestments["data"]["investments"].length == 0
+              ? _renderHomePageWithRecommendedStocks()
+              : _renderHomePageWithUserData(),
+    );
   }
-}
-
-class _StocksData {
-  _StocksData(this.date, this.price);
-
-  final String date;
-  final double price;
 }

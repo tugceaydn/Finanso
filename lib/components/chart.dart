@@ -40,7 +40,7 @@ class Chart extends StatelessWidget {
           xValueMapper: (Map<String, dynamic> data, _) =>
               data['date'] as String,
           yValueMapper: (Map<String, dynamic> data, _) =>
-              data['close'] as double,
+              num.parse(data['close'].toStringAsFixed(2)),
           isVisibleInLegend: false,
           name: '',
           dataLabelSettings: DataLabelSettings(isVisible: isLabelVisible),

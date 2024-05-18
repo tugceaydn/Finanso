@@ -62,10 +62,11 @@ class Onboarding extends StatefulWidget {
 }
 
 class _OnboardingState extends State<Onboarding> {
-  int currentScreenIndex = 0;
-  String? serverUrl = dotenv.env['SERVER_URL'];
   String? token;
+  String? serverUrl = dotenv.env['SERVER_URL'];
+
   bool isLoading = false;
+  int currentScreenIndex = 0;
 
   dynamic preferences = {
     'experience': '',
@@ -104,11 +105,12 @@ class _OnboardingState extends State<Onboarding> {
         headers: headers,
         body: jsonEncode(investmentPreferences),
       );
+      if (!mounted) return;
+
       if (response.statusCode == 200) {
         // ignore: use_build_context_synchronously
         Provider.of<UserProvider>(context, listen: false).setOnboarded(true);
       }
-      print(response.body);
     } catch (error) {
       throw Exception(error);
     }

@@ -101,20 +101,20 @@ class StyledList extends StatelessWidget {
                           Row(
                             children: [
                               StyledText(
-                                text: stockData['gain'] > 0
+                                text: stockData['gain'] >= 0
                                     ? '+\$${stockData['gain'].toStringAsFixed(2)} '
                                     : '-\$${(stockData['gain']).abs().toStringAsFixed(2)} ',
                                 type: 'functional',
-                                color: stockData['gain'] > 0
+                                color: stockData['gain'] >= 0
                                     ? greenSolid
                                     : redSolid,
                               ),
                               StyledText(
-                                text: stockData['gainPercent'] > 0
+                                text: stockData['gainPercent'] >= 0
                                     ? '(+${stockData['gainPercent'].toStringAsFixed(2)}%)'
                                     : '(${stockData['gainPercent'].toStringAsFixed(2)}%)',
                                 type: 'functional',
-                                color: stockData['gainPercent'] > 0
+                                color: stockData['gainPercent'] >= 0
                                     ? greenSolid
                                     : redSolid,
                               ),
