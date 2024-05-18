@@ -42,102 +42,10 @@ class NewsElement {
   }
 }
 
-final List<dynamic> newsList = [
-  {
-    'id': 0,
-    'url': 'https://engoo.com.tr/app/daily-news',
-    'title': 'News Title',
-    'description': 'news description bla bla news description bla bla',
-    'tags': ['Tag1', 'Technology'],
-    'photoUrl':
-        'https://media.istockphoto.com/id/1369150014/tr/vekt%C3%B6r/breaking-news-with-world-map-background-vector.jpg?s=612x612&w=0&k=20&c=6hT8qh1fKffE63gJmQ-KFrJ4CZ4of0zKuJ2Ip6t5bfo=',
-  },
-  {
-    'id': 1,
-    'url': 'https://engoo.com.tr/app/daily-news',
-    'title': 'News Title',
-    'description': 'news description bla bla news description bla bla',
-    'tags': ['Tag1', 'Technology'],
-    'photoUrl':
-        'https://media.istockphoto.com/id/1369150014/tr/vekt%C3%B6r/breaking-news-with-world-map-background-vector.jpg?s=612x612&w=0&k=20&c=6hT8qh1fKffE63gJmQ-KFrJ4CZ4of0zKuJ2Ip6t5bfo=',
-  },
-  {
-    'id': 2,
-    'url': 'https://engoo.com.tr/app/daily-news',
-    'title': 'News Title',
-    'description': 'news description bla bla news description bla bla',
-    'tags': ['Tag1', 'Technology'],
-    'photoUrl':
-        'https://media.istockphoto.com/id/1369150014/tr/vekt%C3%B6r/breaking-news-with-world-map-background-vector.jpg?s=612x612&w=0&k=20&c=6hT8qh1fKffE63gJmQ-KFrJ4CZ4of0zKuJ2Ip6t5bfo=',
-  },
-  {
-    'id': 3,
-    'url': 'https://engoo.com.tr/app/daily-news',
-    'title': 'News Title',
-    'description': 'news description bla bla news description bla bla',
-    'tags': ['Tag1', 'Technology'],
-    'photoUrl':
-        'https://media.istockphoto.com/id/1369150014/tr/vekt%C3%B6r/breaking-news-with-world-map-background-vector.jpg?s=612x612&w=0&k=20&c=6hT8qh1fKffE63gJmQ-KFrJ4CZ4of0zKuJ2Ip6t5bfo=',
-  },
-  {
-    'id': 4,
-    'url': 'https://engoo.com.tr/app/daily-news',
-    'title': 'News Title',
-    'description': 'news description bla bla news description bla bla',
-    'tags': ['Tag1', 'Technology'],
-    'photoUrl':
-        'https://media.istockphoto.com/id/1369150014/tr/vekt%C3%B6r/breaking-news-with-world-map-background-vector.jpg?s=612x612&w=0&k=20&c=6hT8qh1fKffE63gJmQ-KFrJ4CZ4of0zKuJ2Ip6t5bfo=',
-  },
-  {
-    'id': 5,
-    'url': 'https://engoo.com.tr/app/daily-news',
-    'title': 'News Title',
-    'description': 'news description bla bla news description bla bla',
-    'tags': ['Tag1', 'Technology'],
-    'photoUrl':
-        'https://media.istockphoto.com/id/1369150014/tr/vekt%C3%B6r/breaking-news-with-world-map-background-vector.jpg?s=612x612&w=0&k=20&c=6hT8qh1fKffE63gJmQ-KFrJ4CZ4of0zKuJ2Ip6t5bfo=',
-  },
-  {
-    'id': 6,
-    'url': 'https://engoo.com.tr/app/daily-news',
-    'title': 'News Title',
-    'description': 'news description bla bla news description bla bla',
-    'tags': ['Tag1', 'Technology'],
-    'photoUrl':
-        'https://media.istockphoto.com/id/1369150014/tr/vekt%C3%B6r/breaking-news-with-world-map-background-vector.jpg?s=612x612&w=0&k=20&c=6hT8qh1fKffE63gJmQ-KFrJ4CZ4of0zKuJ2Ip6t5bfo=',
-  },
-  {
-    'id': 7,
-    'url': 'https://engoo.com.tr/app/daily-news',
-    'title': 'News Title',
-    'description': 'news description bla bla news description bla bla',
-    'tags': ['Tag1', 'Technology'],
-    'photoUrl':
-        'https://media.istockphoto.com/id/1369150014/tr/vekt%C3%B6r/breaking-news-with-world-map-background-vector.jpg?s=612x612&w=0&k=20&c=6hT8qh1fKffE63gJmQ-KFrJ4CZ4of0zKuJ2Ip6t5bfo=',
-  },
-  {
-    'id': 8,
-    'url': 'https://engoo.com.tr/app/daily-news',
-    'title': 'News Title',
-    'description': 'news description bla bla news description bla bla',
-    'tags': ['Tag1', 'Technology'],
-    'photoUrl':
-        'https://media.istockphoto.com/id/1369150014/tr/vekt%C3%B6r/breaking-news-with-world-map-background-vector.jpg?s=612x612&w=0&k=20&c=6hT8qh1fKffE63gJmQ-KFrJ4CZ4of0zKuJ2Ip6t5bfo=',
-  },
-  {
-    'id': 9,
-    'url': 'https://engoo.com.tr/app/daily-news',
-    'title': 'News Title',
-    'description': 'news description bla bla news description bla bla',
-    'tags': ['Tag1', 'Technology'],
-    'photoUrl':
-        'https://media.istockphoto.com/id/1369150014/tr/vekt%C3%B6r/breaking-news-with-world-map-background-vector.jpg?s=612x612&w=0&k=20&c=6hT8qh1fKffE63gJmQ-KFrJ4CZ4of0zKuJ2Ip6t5bfo=',
-  },
-];
-
 class ForYou extends StatefulWidget {
   const ForYou({super.key});
 
+  @override
   State<ForYou> createState() => _ForYou();
 }
 
@@ -191,13 +99,17 @@ class _ForYou extends State<ForYou> {
         Uri.parse('$serverUrl/recommend/stocks?amount=20'),
         headers: headers,
       );
+      if (!mounted) return;
+
       Map<String, dynamic> responseData = jsonDecode(response.body);
       List<dynamic> data = responseData['data'];
+
       setState(() {
         recommendStocksList =
             data.map((item) => Map<String, Object>.from(item)).toList();
         isRecommendStockListLoading = false;
       });
+
       _calculateTotalGain();
       _sortRecommendedStocks();
     } catch (error) {
@@ -216,6 +128,7 @@ class _ForYou extends State<ForYou> {
         Uri.parse('$serverUrl/recommend/news'),
         headers: headers,
       );
+      if (!mounted) return;
 
       Map<String, dynamic> responseData = jsonDecode(response.body);
 

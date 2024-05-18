@@ -148,7 +148,7 @@ class _MainState extends State<Main> {
             label: 'Home Page',
           ),
           BottomNavigationBarItem(
-            activeIcon: Icon(Icons.search),
+            activeIcon: Icon(Icons.explore),
             icon: Icon(Icons.explore_outlined),
             label: 'For You',
           ),
