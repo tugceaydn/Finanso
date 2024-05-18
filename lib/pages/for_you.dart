@@ -13,6 +13,35 @@ import 'package:http/http.dart' as http;
 
 import '../core/jwt_provider.dart';
 
+class NewsElement {
+  String title;
+  String date;
+  String image;
+  String link;
+  List<dynamic> tags;
+  String publisher;
+
+  NewsElement({
+    required this.title,
+    required this.date,
+    required this.image,
+    required this.link,
+    required this.tags,
+    required this.publisher,
+  });
+
+  static NewsElement fromJson(Map<String, dynamic> json) {
+    return NewsElement(
+      title: json['title'] as String,
+      date: json['date'] as String,
+      image: json['image'] as String,
+      link: json['link'] as String,
+      tags: json['tags'] as List<dynamic>,
+      publisher: json['publisher'] as String,
+    );
+  }
+}
+
 final List<dynamic> newsList = [
   {
     'id': 0,
@@ -115,12 +144,18 @@ class ForYou extends StatefulWidget {
 class _ForYou extends State<ForYou> {
   String? serverUrl = dotenv.env['SERVER_URL'];
   String? token;
+
   bool isRecommendStockListLoading = true;
+  bool isNewsLoading = true;
+
   late Map<String, List<Map<String, dynamic>>> stockList;
+
   List<Map<String, Object>> recommendStocksList = [];
+  List<NewsElement> news = [];
+
   int _selectedIndex = 0;
 
-  void sortList() {
+  void _sortRecommendedStocks() {
     stockList = {};
 
     List<Map<String, dynamic>> companies = [];
@@ -153,11 +188,9 @@ class _ForYou extends State<ForYou> {
 
     try {
       final response = await http.post(
-        Uri.parse('$serverUrl/recommend/stocks'),
+        Uri.parse('$serverUrl/recommend/stocks?amount=20'),
         headers: headers,
       );
-      if (!mounted) return;
-
       Map<String, dynamic> responseData = jsonDecode(response.body);
       List<dynamic> data = responseData['data'];
       setState(() {
@@ -166,7 +199,32 @@ class _ForYou extends State<ForYou> {
         isRecommendStockListLoading = false;
       });
       _calculateTotalGain();
-      sortList();
+      _sortRecommendedStocks();
+    } catch (error) {
+      throw Exception(error);
+    }
+  }
+
+  Future<void> _fetchNews() async {
+    Map<String, String> headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse('$serverUrl/recommend/news'),
+        headers: headers,
+      );
+
+      Map<String, dynamic> responseData = jsonDecode(response.body);
+
+      List<dynamic> data = responseData['data'];
+
+      setState(() {
+        news = data.map((item) => NewsElement.fromJson(item)).toList();
+        isNewsLoading = false;
+      });
     } catch (error) {
       throw Exception(error);
     }
@@ -196,6 +254,7 @@ class _ForYou extends State<ForYou> {
     super.initState();
     token = Provider.of<JWTProvider>(context, listen: false).token;
     _fetchRecommendedStocks();
+    _fetchNews();
   }
 
   Widget _buildTab(String title, int index) {
@@ -231,19 +290,16 @@ class _ForYou extends State<ForYou> {
       child: ListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: newsList.length,
+        itemCount: news.length,
         itemBuilder: (context, index) {
-          final newsItem = newsList[index];
+          final newsItem = news[index];
           final bool isFirstItem = index == 0;
-          final bool isLastItem = index == newsList.length - 1;
+          final bool isLastItem = index == news.length - 1;
 
           return InkWell(
             onTap: () async {
-              if (await canLaunchUrl(Uri.parse(newsItem['url']))) {
-                await launchUrl(
-                  Uri.parse(newsItem['url']),
-                  mode: LaunchMode.externalApplication,
-                );
+              if (await canLaunchUrl(Uri.parse(newsItem.link))) {
+                await launchUrl(Uri.parse(newsItem.link));
               }
             },
             child: Container(
@@ -271,27 +327,16 @@ class _ForYou extends State<ForYou> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         StyledText(
-                          text: newsItem['title'],
+                          text: newsItem.title,
                           color: textPrimary,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          newsItem['description'],
-                          style: const TextStyle(
-                            fontFamily: 'San Francisco',
-                            fontSize: 12,
-                            fontWeight: FontWeight.normal,
-                            height: 1.25,
-                            overflow: TextOverflow.ellipsis,
-                            color: textSmoke,
-                          ),
+                          maximumLines: 2,
                         ),
                         const SizedBox(height: 8),
                         Row(
                           children: List.generate(
-                            newsItem['tags'].length,
+                            newsItem.tags.length,
                             (tagIndex) {
-                              final tag = newsItem['tags'][tagIndex];
+                              final tag = newsItem.tags[tagIndex];
                               return Padding(
                                 padding: const EdgeInsets.only(
                                   right: 8.0,
@@ -325,7 +370,7 @@ class _ForYou extends State<ForYou> {
                         height: 68,
                         width: 68,
                         child: Image.network(
-                          newsItem['photoUrl'],
+                          newsItem.image,
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -405,9 +450,12 @@ class _ForYou extends State<ForYou> {
             _buildTab("Stocks", 1),
           ],
         ),
-        Container(
+        SizedBox(
+          width: double.infinity,
           child: _selectedIndex == 0
-              ? _renderNews()
+              ? isNewsLoading
+                  ? const CircularProgress()
+                  : _renderNews()
               : isRecommendStockListLoading
                   ? const CircularProgress()
                   : _renderStockList(),
