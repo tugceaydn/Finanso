@@ -29,7 +29,7 @@ class Chart extends StatelessWidget {
                 .reduce((value, element) => element < value ? element : value) -
             50,
       ),
-      enableAxisAnimation: true,
+      enableAxisAnimation: false,
       legend: const Legend(isVisible: true),
       tooltipBehavior: TooltipBehavior(enable: true),
       series: <CartesianSeries<Map<String, dynamic>, String>>[

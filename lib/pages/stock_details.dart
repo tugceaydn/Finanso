@@ -9,6 +9,7 @@ import 'package:stock_market/components/styled_button.dart';
 import 'package:stock_market/core/app_themes.dart';
 import 'package:http/http.dart' as http;
 import 'package:stock_market/main.dart';
+import 'package:stock_market/pages/transaction.dart';
 
 import '../components/styled_text.dart';
 import '../core/jwt_provider.dart';
@@ -25,6 +26,7 @@ class StockDetails extends StatefulWidget {
   final String symbol;
   const StockDetails({super.key, required this.symbol});
 
+  @override
   State<StockDetails> createState() => _StockDetails();
 }
 
@@ -38,6 +40,7 @@ class _StockDetails extends State<StockDetails> {
   late Map<String, dynamic> stockData;
 
   bool isLoading = true;
+  bool isForecastLoading = false;
   late bool isForecastActive;
   late bool isStockTrendIncrease = false;
 
@@ -81,6 +84,93 @@ class _StockDetails extends State<StockDetails> {
     }
   }
 
+  void _fetchForecastData() async {
+    setState(() {
+      isForecastLoading = true;
+    });
+
+    Map<String, String> headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
+
+    dynamic body = {
+      "company_tickers": [symbol],
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse('$serverUrl/forecast/'),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = jsonDecode(response.body);
+        final List<dynamic> companyForecasts = body['data'];
+        final companyForecastMonthData = companyForecasts[0]["months"];
+
+        List<int> monthsKeys = companyForecastMonthData.keys
+            .map<int>((key) => int.parse(key))
+            .toList();
+
+        monthsKeys.sort();
+
+        bool entryExists = false;
+        for (var data in chartData['Forecast']!) {
+          if (data['date'] == 'Now') {
+            data['close'] = stockData["last_close"];
+            entryExists = true;
+            break;
+          }
+        }
+
+        if (!entryExists) {
+          chartData['Forecast']!.add({
+            'date': 'Now',
+            'close': stockData["last_close"],
+          });
+        }
+
+        for (var month in monthsKeys) {
+          String dateString = '+${month}m';
+
+          bool entryExists = false;
+          for (var data in chartData['Forecast']!) {
+            if (data['date'] == dateString) {
+              data['close'] = companyForecastMonthData[month.toString()];
+              entryExists = true;
+              break;
+            }
+          }
+
+          if (!entryExists) {
+            chartData['Forecast']!.add({
+              'date': dateString,
+              'close': companyForecastMonthData[month.toString()],
+            });
+          }
+        }
+
+        setState(() {
+          gain = _calculateGain(range: 'Forecast');
+          isStockTrendIncrease = gain >= 0;
+          isForecastLoading = false;
+        });
+      }
+
+      setState(() {
+        isForecastLoading = false;
+      });
+    } catch (error) {
+      setState(() {
+        isForecastLoading = false;
+      });
+      throw Exception(error);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -93,9 +183,6 @@ class _StockDetails extends State<StockDetails> {
   }
 
   double _calculateGain({String range = '1W'}) {
-    // Simulate a delay for fetching data or any other initialization
-    // await Future.delayed(const Duration(milliseconds: 200));
-
     final List<Map<String, dynamic>> selectedRangeData = chartData[range]!;
 
     final start = selectedRangeData[0]["close"];
@@ -147,7 +234,7 @@ class _StockDetails extends State<StockDetails> {
             'Risk',
             stockData['risk_label'].toString(),
             null,
-            stockData['risk_label'].toString() == "high" ? redSolid : primary,
+            primary,
           ),
         ),
         GridTile(
@@ -163,9 +250,7 @@ class _StockDetails extends State<StockDetails> {
             'Profitability',
             stockData['profitability_label'].toString(),
             null,
-            stockData['profitability_label'].toString() == "high"
-                ? redSolid
-                : primary,
+            primary,
           ),
         ),
         GridTile(
@@ -200,70 +285,90 @@ class _StockDetails extends State<StockDetails> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Expanded(
-          flex: 3,
-          child: Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    height: 27,
-                    width: 27,
-                    child: CircleAvatar(
-                      backgroundColor: primarySmoke,
-                      backgroundImage: NetworkImage(stockData['logo']),
+        // Expanded(
+        // flex: 3,
+        // child:
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: 27,
+                  width: 27,
+                  child: CircleAvatar(
+                    backgroundColor: primarySmoke,
+                    backgroundImage: NetworkImage(stockData['logo']),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                StyledText(
+                  text: stockData['name'].toString(),
+                  maximumLines: 1,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                StyledText(
+                  text: '\$${stockData['last_close'].toStringAsFixed(2)}',
+                  type: 'title_bold',
+                ),
+                const SizedBox(width: 4),
+                Row(
+                  children: [
+                    !isForecastLoading
+                        ? Icon(
+                            isStockTrendIncrease
+                                ? Icons.arrow_outward_sharp
+                                : Icons.arrow_downward_rounded,
+                            color: isStockTrendIncrease ? greenSolid : redSolid,
+                          )
+                        : Container(),
+                    StyledText(
+                      text: isForecastLoading
+                          ? ''
+                          : gain >= 0
+                              ? '+${gain.toStringAsFixed(2)}%'
+                              : '${gain.toStringAsFixed(2)}%',
+                      color: isStockTrendIncrease ? greenSolid : redSolid,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  StyledText(text: stockData['name'].toString()),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  StyledText(
-                    text: '\$${stockData['last_close'].toStringAsFixed(2)}',
-                    type: 'title_bold',
-                  ),
-                  const SizedBox(width: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        isStockTrendIncrease
-                            ? Icons.arrow_outward_sharp
-                            : Icons.arrow_downward_rounded,
-                        color: isStockTrendIncrease ? greenSolid : redSolid,
-                      ),
-                      StyledText(
-                        text: gain >= 0
-                            ? '+${gain.toStringAsFixed(2)}%'
-                            : '${gain.toStringAsFixed(2)}%',
-                        color: isStockTrendIncrease ? greenSolid : redSolid,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
+                  ],
+                ),
+              ],
+            ),
+          ],
         ),
-        Expanded(
-          flex: 2,
+        // ),
+        // Expanded(
+        //   flex: 2,
+        //   child:
+        SizedBox(
+          width: 120,
           child: StyledButton(
             handlePress: () {
               setState(() {
                 selectedRange = isForecastActive ? '1W' : 'Forecast';
                 isForecastActive = !isForecastActive;
+
+                if (chartData['Forecast']!.isEmpty) {
+                  _fetchForecastData();
+                } else {
+                  gain = _calculateGain(range: 'Forecast');
+                  isStockTrendIncrease = gain >= 0;
+                }
               });
             },
             text: 'Forecast',
             isActive: isForecastActive,
           ),
-        )
+        ),
+        //   )
       ],
     );
   }
@@ -300,10 +405,13 @@ class _StockDetails extends State<StockDetails> {
       children: [
         SizedBox(
           height: 160,
-          child: Chart(
-            data: chartData[selectedRange]!,
-            color: isStockTrendIncrease ? greenSolid : redSolid,
-          ),
+          child: selectedRange == 'Forecast' && isForecastLoading
+              ? const CircularProgress()
+              : Chart(
+                  data: chartData[selectedRange]!,
+                  color: isStockTrendIncrease ? greenSolid : redSolid,
+                  isLabelVisible: selectedRange == 'Forecast',
+                ),
         ),
         const SizedBox(height: 32),
         Row(
@@ -363,16 +471,38 @@ class _StockDetails extends State<StockDetails> {
         children: [
           Expanded(
             child: StyledButton(
-              handlePress: () {},
-              text: 'Delete Purchase',
+              handlePress: () {
+                navigatorKey.currentState?.push(
+                  MaterialPageRoute(
+                    builder: (context) => Transaction(
+                      type: "sell",
+                      logo: stockData["logo"],
+                      name: stockData["name"],
+                      symbol: stockData["company_ticker"],
+                    ),
+                  ),
+                );
+              },
+              text: 'Enter Sell',
               type: 'delete',
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: StyledButton(
-              handlePress: () {},
-              text: 'Enter Purchase',
+              handlePress: () {
+                navigatorKey.currentState?.push(
+                  MaterialPageRoute(
+                    builder: (context) => Transaction(
+                      type: "buy",
+                      logo: stockData["logo"],
+                      name: stockData["name"],
+                      symbol: stockData["company_ticker"],
+                    ),
+                  ),
+                );
+              },
+              text: 'Enter Buy',
               isActive: true,
             ),
           )
@@ -398,6 +528,7 @@ class _StockDetails extends State<StockDetails> {
                         children: [
                           InkWell(
                             onTap: () {
+                              chartData['Forecast'] = [];
                               navigatorKey.currentState?.pop(context);
                             },
                             child: const Icon(Icons.arrow_back),
