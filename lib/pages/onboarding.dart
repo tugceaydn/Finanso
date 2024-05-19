@@ -101,7 +101,7 @@ class _OnboardingState extends State<Onboarding> {
 
     try {
       dynamic response = await http.post(
-        Uri.parse('$serverUrl/onboard'),
+        Uri.parse('$serverUrl/onboard/'),
         headers: headers,
         body: jsonEncode(investmentPreferences),
       );

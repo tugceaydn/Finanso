@@ -5,14 +5,16 @@ import 'package:stock_market/main.dart';
 import 'package:stock_market/pages/stock_details.dart';
 
 class StyledList extends StatelessWidget {
-  final List<Map<String, dynamic>> stockDataList;
   final bool onlySector;
   final bool isCurrentPriceIncluded;
+  final List<Map<String, dynamic>> stockDataList;
+  final void Function()? onUpdateParent;
 
   const StyledList({
     super.key,
-    required this.stockDataList,
+    this.onUpdateParent,
     required this.onlySector,
+    required this.stockDataList,
     this.isCurrentPriceIncluded = true,
   });
 
@@ -28,12 +30,16 @@ class StyledList extends StatelessWidget {
         final bool isLastItem = index == stockDataList.length - 1;
 
         return InkWell(
-          onTap: () {
-            navigatorKey.currentState?.push(
+          onTap: () async {
+            bool shouldRemount = await navigatorKey.currentState?.push(
               MaterialPageRoute(
                 builder: (context) => StockDetails(symbol: stockData["symbol"]),
               ),
             );
+
+            if (shouldRemount == true && onUpdateParent != null) {
+              onUpdateParent!();
+            }
           },
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -111,7 +117,7 @@ class StyledList extends StatelessWidget {
                   children: !onlySector
                       ? [
                           StyledText(
-                            text: stockData['invested'] > 0
+                            text: stockData['invested'] >= 0
                                 ? '\$${stockData['invested'].toStringAsFixed(2)}'
                                 : '-\$${(stockData['invested']).abs().toStringAsFixed(2)}',
                             type: 'body',
