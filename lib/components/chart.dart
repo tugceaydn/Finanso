@@ -31,7 +31,12 @@ class Chart extends StatelessWidget {
       ),
       enableAxisAnimation: false,
       legend: const Legend(isVisible: true),
-      tooltipBehavior: TooltipBehavior(enable: true),
+      tooltipBehavior: TooltipBehavior(
+        enable: true,
+        animationDuration: 150,
+        canShowMarker: false,
+        decimalPlaces: 2,
+      ),
       series: <CartesianSeries<Map<String, dynamic>, String>>[
         LineSeries<Map<String, dynamic>, String>(
           color: color ?? primary,

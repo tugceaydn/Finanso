@@ -42,10 +42,6 @@ class _StockDetails extends State<StockDetails> {
 
   bool isLoading = true;
   bool isForecastLoading = false;
-  late bool isForecastActive;
-  late bool isStockTrendIncrease = false;
-
-  late double gain;
 
   Future<void> _fetchStockData() async {
     if (!mounted) return;
@@ -76,9 +72,7 @@ class _StockDetails extends State<StockDetails> {
           List<Map<String, dynamic>>.from(stockData["historical_values"]["5y"]);
 
       setState(() {
-        gain = _calculateGain();
         isLoading = false;
-        isStockTrendIncrease = gain >= 0;
       });
     } catch (error) {
       throw Exception(error);
@@ -155,8 +149,6 @@ class _StockDetails extends State<StockDetails> {
         }
 
         setState(() {
-          gain = _calculateGain(range: 'Forecast');
-          isStockTrendIncrease = gain >= 0;
           isForecastLoading = false;
         });
       }
@@ -176,15 +168,17 @@ class _StockDetails extends State<StockDetails> {
   void initState() {
     super.initState();
 
-    isForecastActive = false;
     symbol = widget.symbol;
     token = Provider.of<JWTProvider>(context, listen: false).token;
 
     _fetchStockData();
   }
 
-  double _calculateGain({String range = '1W'}) {
-    final List<Map<String, dynamic>> selectedRangeData = chartData[range]!;
+  double _calculateGain() {
+    final List<Map<String, dynamic>> selectedRangeData =
+        chartData[selectedRange]!;
+
+    if (selectedRangeData.isEmpty) return 0;
 
     final start = selectedRangeData[0]["close"];
     final end = selectedRangeData[selectedRangeData.length - 1]["close"];
@@ -283,6 +277,9 @@ class _StockDetails extends State<StockDetails> {
   }
 
   Widget _renderTopSectionOfCard() {
+    double gain = _calculateGain();
+    bool isStockTrendIncrease = gain >= 0;
+
     return Column(
       children: [
         Row(
@@ -339,18 +336,26 @@ class _StockDetails extends State<StockDetails> {
                   type: 'title_bold',
                 ),
                 const SizedBox(width: 4),
-                Icon(
-                  isStockTrendIncrease
-                      ? Icons.arrow_outward_sharp
-                      : Icons.arrow_downward_rounded,
-                  color: isStockTrendIncrease ? greenSolid : redSolid,
-                ),
-                StyledText(
-                  text: gain >= 0
-                      ? '+${gain.toStringAsFixed(2)}%'
-                      : '${gain.toStringAsFixed(2)}%',
-                  color: isStockTrendIncrease ? greenSolid : redSolid,
-                ),
+                isForecastLoading
+                    ? Container()
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Icon(
+                            isStockTrendIncrease
+                                ? Icons.arrow_outward_rounded
+                                : Icons.arrow_downward_rounded,
+                            color: isStockTrendIncrease ? greenSolid : redSolid,
+                          ),
+                          StyledText(
+                            text: gain >= 0
+                                ? '+${gain.toStringAsFixed(2)}%'
+                                : '${gain.toStringAsFixed(2)}%',
+                            color: isStockTrendIncrease ? greenSolid : redSolid,
+                          ),
+                        ],
+                      ),
                 const SizedBox(width: 16),
               ],
             ),
@@ -359,12 +364,16 @@ class _StockDetails extends State<StockDetails> {
               child: StyledButton(
                 handlePress: () {
                   setState(() {
-                    selectedRange = isForecastActive ? '1W' : 'Forecast';
-                    isForecastActive = !isForecastActive;
+                    selectedRange =
+                        selectedRange == 'Forecast' ? '1W' : 'Forecast';
+
+                    if (chartData['Forecast']!.isEmpty) {
+                      _fetchForecastData();
+                    }
                   });
                 },
                 text: 'Forecast',
-                isActive: isForecastActive,
+                isActive: selectedRange == 'Forecast',
               ),
             )
           ],
@@ -373,15 +382,12 @@ class _StockDetails extends State<StockDetails> {
     );
   }
 
-  Widget _buildSelectableBox(String range) {
+  Widget _renderChartRangeButton(String range) {
     final bool isSelected = range == selectedRange;
     return GestureDetector(
       onTap: () {
         setState(() {
-          gain = _calculateGain(range: range);
           selectedRange = range;
-          isForecastActive = false;
-          isStockTrendIncrease = gain >= 0;
         });
       },
       child: Container(
@@ -401,26 +407,30 @@ class _StockDetails extends State<StockDetails> {
   }
 
   Widget _renderChartsSection() {
+    double gain = _calculateGain();
+    bool isStockTrendIncrease = gain >= 0;
+    bool isForecastActive = selectedRange == 'Forecast';
+
     return Column(
       children: [
         SizedBox(
-          height: 160,
-          child: selectedRange == 'Forecast' && isForecastLoading
+          height: 192,
+          child: isForecastLoading
               ? const CircularProgress()
               : Chart(
                   data: chartData[selectedRange]!,
                   color: isStockTrendIncrease ? greenSolid : redSolid,
-                  isLabelVisible: selectedRange == 'Forecast',
+                  isLabelVisible: isForecastActive,
                 ),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildSelectableBox('1W'),
-            _buildSelectableBox('1M'),
-            _buildSelectableBox('1Y'),
-            _buildSelectableBox('5Y'),
+            _renderChartRangeButton('1W'),
+            _renderChartRangeButton('1M'),
+            _renderChartRangeButton('1Y'),
+            _renderChartRangeButton('5Y'),
           ],
         ),
       ],
@@ -428,6 +438,8 @@ class _StockDetails extends State<StockDetails> {
   }
 
   Widget _renderCard() {
+    bool isForecastActive = selectedRange == 'Forecast';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -440,7 +452,7 @@ class _StockDetails extends State<StockDetails> {
           child: Column(
             children: [
               _renderTopSectionOfCard(),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
               _renderChartsSection(),
             ],
           ),
