@@ -36,11 +36,33 @@ class _HomePage extends State<HomePage> {
   double totalGain = 0,
       totalGainPercentage = 0,
       totalExpend = 0,
-      totalInvested = 0;
+      totalInvested = 0,
+      totalMoney = 0;
 
   bool isLoading = true;
   bool isForecastLoading = true;
   bool isRecommendListLoading = true;
+
+  void _remountHomepage() {
+    setState(() {
+      myInvestments = {};
+
+      myInvestmentsList = [];
+      forecastChartData = [];
+      recommendStocksList = [];
+
+      totalGain = 0;
+      totalGainPercentage = 0;
+      totalExpend = 0;
+      totalInvested = 0;
+
+      isLoading = true;
+      isForecastLoading = true;
+      isRecommendListLoading = true;
+    });
+
+    _fetchMyInvestments();
+  }
 
   void _fetchRecommendedStocks() async {
     setState(() {
@@ -54,7 +76,7 @@ class _HomePage extends State<HomePage> {
 
     try {
       final response = await http.post(
-        Uri.parse('$serverUrl/recommend/stocks'),
+        Uri.parse('$serverUrl/recommend/stocks/'),
         headers: headers,
       );
       if (!mounted) return;
@@ -82,8 +104,8 @@ class _HomePage extends State<HomePage> {
     };
 
     try {
-      final response = await http.get(Uri.parse('$serverUrl/investments/'),
-          headers: headers);
+      final response =
+          await http.get(Uri.parse('$serverUrl/investments'), headers: headers);
       if (!mounted) return;
       setState(() {
         myInvestments = jsonDecode(response.body);
@@ -99,7 +121,7 @@ class _HomePage extends State<HomePage> {
 
         for (var element in myInvestmentsList) {
           totalInvested += element['invested'] as double;
-          totalExpend += element['totalPrice'] as double;
+          totalExpend += element['totalBuy'] as double;
           totalGain += element['gain'] as double;
         }
 
@@ -221,7 +243,7 @@ class _HomePage extends State<HomePage> {
           'invested': gains[0],
           'gain': gains[1],
           'gainPercent': gains[2],
-          'totalPrice': gains[3],
+          'totalBuy': gains[3],
         });
       },
     );
@@ -233,32 +255,32 @@ class _HomePage extends State<HomePage> {
     List<dynamic> companyInvestments,
     double targetClose,
   ) {
-    double curAmount = 0, totalPrice = 0, totalAmount = 0;
+    double curAmount = 0, totalAmount = 0, totalBuy = 0;
     double avg = 0, unrealizedGain = 0, realizedGain;
 
     for (final investment in companyInvestments) {
       if (investment["type"] == "buy") {
         curAmount += investment["amount"];
         totalAmount += investment["amount"];
-        totalPrice += investment["price"] * investment["amount"];
+        totalBuy += investment["price"] * investment["amount"];
       }
 
       if (investment["type"] == "sell") {
-        avg = totalPrice / totalAmount;
+        avg = totalBuy / totalAmount;
         curAmount -= investment["amount"];
         unrealizedGain += (investment["price"] - avg) * investment["amount"];
       }
     }
 
-    avg = totalPrice / totalAmount;
+    avg = totalBuy / totalAmount;
 
-    realizedGain = curAmount.toDouble() * (targetClose - avg);
+    realizedGain = curAmount * (targetClose - avg);
 
     double curInvested = unrealizedGain + (targetClose * curAmount);
     double curGain = realizedGain + unrealizedGain;
-    double curGainPercent = (curGain / totalPrice) * 100;
+    double curGainPercent = totalBuy == 0 ? 0 : ((curGain / totalBuy) * 100);
 
-    return [curInvested, curGain, curGainPercent, totalPrice];
+    return [curInvested, curGain, curGainPercent, totalBuy];
   }
 
   Widget _renderInitialTopSection() {
@@ -299,6 +321,7 @@ class _HomePage extends State<HomePage> {
                 : StyledList(
                     stockDataList: recommendStocksList,
                     onlySector: true,
+                    onUpdateParent: _remountHomepage,
                   ),
             const SizedBox(height: 16),
             const StyledText(
@@ -343,7 +366,7 @@ class _HomePage extends State<HomePage> {
               ),
               const SizedBox(height: 4),
               StyledText(
-                text: totalInvested > 0
+                text: totalInvested >= 0
                     ? '\$${totalInvested.toStringAsFixed(2)}'
                     : '-\$${(totalInvested).abs().toStringAsFixed(2)}',
                 type: 'header',
@@ -394,6 +417,7 @@ class _HomePage extends State<HomePage> {
             StyledList(
               stockDataList: myInvestmentsList,
               onlySector: false,
+              onUpdateParent: _remountHomepage,
             ),
           ],
         ),

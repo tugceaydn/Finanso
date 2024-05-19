@@ -42,6 +42,7 @@ class _StockDetails extends State<StockDetails> {
 
   bool isLoading = true;
   bool isForecastLoading = false;
+  bool isTransactionAdded = false;
 
   void _resetState() {
     chartData = {
@@ -512,6 +513,8 @@ class _StockDetails extends State<StockDetails> {
                 );
 
                 if (shouldRemount) {
+                  isTransactionAdded = true;
+
                   setState(() {
                     _resetState();
                   });
@@ -541,6 +544,7 @@ class _StockDetails extends State<StockDetails> {
 
                 if (shouldRemount) {
                   // set it to true
+                  isTransactionAdded = true;
 
                   setState(() {
                     _resetState();
@@ -575,8 +579,7 @@ class _StockDetails extends State<StockDetails> {
                         children: [
                           InkWell(
                             onTap: () {
-                              chartData['Forecast'] = [];
-                              Navigator.pop(context);
+                              Navigator.pop(context, isTransactionAdded);
                             },
                             child: const Icon(Icons.arrow_back),
                           ),
