@@ -99,6 +99,7 @@ class _SignupPageState extends State<SignupPage> {
             password: _passwordInputController.text,
           ),
           text: 'Sign up',
+          isActive: true,
         ),
         const SizedBox(height: 32),
         Row(

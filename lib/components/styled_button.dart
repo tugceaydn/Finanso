@@ -74,7 +74,9 @@ class StyledButton extends StatelessWidget {
                   Size.fromWidth(double.maxFinite),
                 ),
                 backgroundColor: MaterialStatePropertyAll(
-                  isDisabled ? redBackground : redBackground,
+                  isDisabled
+                      ? const Color.fromRGBO(229, 148, 148, 0.3)
+                      : redBackground,
                 ),
               ),
           child: Stack(
@@ -83,12 +85,12 @@ class StyledButton extends StatelessWidget {
               Center(
                 child: Text(
                   text,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'San Francisco',
                     fontSize: 14,
                     fontWeight: FontWeight.normal,
                     height: 1.0,
-                    color: redSolid,
+                    color: isDisabled ? redLight : redSolid,
                   ),
                 ),
               ),
@@ -105,7 +107,7 @@ class StyledButton extends StatelessWidget {
                 ),
                 backgroundColor: MaterialStatePropertyAll(
                   isDisabled
-                      ? primarySmoke
+                      ? const Color.fromRGBO(101, 141, 221, 0.5)
                       : isActive!
                           ? primary
                           : Colors.white,
@@ -118,7 +120,11 @@ class StyledButton extends StatelessWidget {
                 child: StyledText(
                   text: text,
                   type: 'button',
-                  color: isActive! ? Colors.white : Colors.black,
+                  color: isDisabled
+                      ? textSmoke
+                      : isActive!
+                          ? Colors.white
+                          : Colors.black,
                 ),
               ),
               icon ?? Container(),

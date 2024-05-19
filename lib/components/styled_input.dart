@@ -41,6 +41,10 @@ class StyledInput extends StatelessWidget {
         focusedBorder: Theme.of(context).inputDecorationTheme.focusedBorder,
         disabledBorder: Theme.of(context).inputDecorationTheme.disabledBorder,
         prefixIcon: prefixIcon,
+        prefixIconConstraints: const BoxConstraints(
+          minWidth: 32,
+          minHeight: 32,
+        ),
       ),
       style: body,
     );

@@ -127,11 +127,14 @@ class _Search extends State<Search> {
   }
 
   Widget _renderSearchList() {
-    return BlueSection(
-        child: StyledList(
-      stockDataList: recommendStocksList,
-      onlySector: true,
-    ));
+    return SizedBox(
+      width: double.infinity,
+      child: BlueSection(
+          child: StyledList(
+        stockDataList: recommendStocksList,
+        onlySector: true,
+      )),
+    );
   }
 
   @override
