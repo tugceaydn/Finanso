@@ -1,15 +1,21 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
 import 'package:stock_market/components/styled_button.dart';
 import 'package:stock_market/components/styled_input.dart';
 import 'package:stock_market/components/styled_text.dart';
 import 'package:stock_market/core/app_themes.dart';
-import 'package:stock_market/main.dart';
+import 'package:stock_market/core/jwt_provider.dart';
+import 'package:http/http.dart' as http;
 
 class Transaction extends StatefulWidget {
   final String logo;
   final String name;
   final String type;
   final String symbol;
+  final num amount;
 
   const Transaction({
     super.key,
@@ -17,37 +23,109 @@ class Transaction extends StatefulWidget {
     required this.name,
     required this.type,
     required this.symbol,
+    required this.amount,
   });
 
   @override
   State<Transaction> createState() => _Transaction();
 }
 
+String removeLeadingZeroes(String x) {
+  if (x.trim().isEmpty) return '0';
+
+  int i = 0;
+
+  if (x[x.length - 1] == '.') {
+    x = x.substring(0, x.length - 1);
+  }
+
+  for (; i < x.length; i++) {
+    if (x[i] != '0' || (i < x.length - 1 && x[i + 1] == '.')) break;
+  }
+
+  return i == x.length ? '0' : x.substring(i);
+}
+
 class _Transaction extends State<Transaction> {
   late TextEditingController _dateInputController;
   late TextEditingController _amountInputController;
 
+  String? token;
+  String? serverUrl = dotenv.env['SERVER_URL'];
+
+  bool isLoading = false;
   DateTime selectedDate = DateTime.now();
 
   @override
   void initState() {
     super.initState();
+
     _dateInputController = TextEditingController();
     _amountInputController = TextEditingController();
-    _amountInputController.addListener(_updateButtonState);
     _dateInputController.text = "${selectedDate.toLocal()}".split(' ')[0];
+
+    token = Provider.of<JWTProvider>(context, listen: false).token;
   }
 
   @override
   void dispose() {
-    _amountInputController.removeListener(_updateButtonState);
     _amountInputController.dispose();
     _dateInputController.dispose();
+
     super.dispose();
   }
 
-  void _updateButtonState() {
+  void onAmountChange(String value) {
     setState(() {});
+
+    if (widget.type == 'buy') return;
+
+    final userValue = num.parse(removeLeadingZeroes(value));
+
+    if (userValue > widget.amount) {
+      _amountInputController.text = widget.amount.toString();
+    }
+  }
+
+  void _postNewInvestment() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    Map<String, String> headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
+
+    final amount = num.parse(removeLeadingZeroes(_amountInputController.text));
+
+    dynamic body = {
+      'date': _dateInputController.text,
+      'amount': amount,
+      'company_ticker': widget.symbol,
+      'type': widget.type
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse('$serverUrl/investments/'),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        // redirect back
+        Navigator.pop(context, true);
+      }
+    } catch (error) {
+      setState(() {
+        isLoading = false;
+      });
+
+      throw Exception(error);
+    }
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -89,7 +167,7 @@ class _Transaction extends State<Transaction> {
           children: [
             InkWell(
               onTap: () {
-                navigatorKey.currentState?.pop(context);
+                Navigator.pop(context, false);
               },
               child: const Icon(Icons.arrow_back),
             ),
@@ -124,7 +202,12 @@ class _Transaction extends State<Transaction> {
       children: [
         const StyledText(text: 'Amount'),
         const SizedBox(height: 8),
-        StyledInput(controller: _amountInputController, hint: '0.56'),
+        StyledInput(
+          handleChange: onAmountChange,
+          controller: _amountInputController,
+          isNumber: true,
+          hint: '0.56',
+        ),
         const SizedBox(height: 32),
         const StyledText(text: 'Date'),
         const SizedBox(height: 8),
@@ -141,16 +224,24 @@ class _Transaction extends State<Transaction> {
         const SizedBox(height: 32),
         widget.type == "sell"
             ? StyledButton(
-                handlePress: () {},
+                handlePress: _postNewInvestment,
                 text: 'Enter Sell',
                 type: 'delete',
-                isDisabled: _amountInputController.text == "",
+                isDisabled: isLoading ||
+                    num.parse(
+                          removeLeadingZeroes(_amountInputController.text),
+                        ) ==
+                        0,
               )
             : StyledButton(
-                handlePress: () {},
+                handlePress: _postNewInvestment,
                 text: 'Enter Buy',
                 isActive: true,
-                isDisabled: _amountInputController.text == "",
+                isDisabled: isLoading ||
+                    num.parse(
+                          removeLeadingZeroes(_amountInputController.text),
+                        ) ==
+                        0,
               ),
       ],
     );

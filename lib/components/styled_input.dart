@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:stock_market/core/app_themes.dart';
 
 class StyledInput extends StatelessWidget {
@@ -6,6 +7,7 @@ class StyledInput extends StatelessWidget {
   final TextEditingController controller;
   final bool isPassword;
   final bool isDisabled;
+  final bool isNumber;
   final String? Function(String?)? validatorFn;
   final void Function(String)? handleChange;
   final Widget? prefixIcon;
@@ -18,6 +20,7 @@ class StyledInput extends StatelessWidget {
     this.handleChange,
     this.isPassword = false,
     this.isDisabled = false,
+    this.isNumber = false,
     this.prefixIcon,
   });
 
@@ -28,6 +31,12 @@ class StyledInput extends StatelessWidget {
       autocorrect: false,
       controller: controller,
       validator: validatorFn,
+      keyboardType: isNumber
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+      inputFormatters: isNumber
+          ? [FilteringTextInputFormatter.allow(RegExp(r'^(\d+)?\.?\d{0,2}'))]
+          : [],
       obscureText: isPassword,
       enabled: !isDisabled,
       readOnly: isDisabled,

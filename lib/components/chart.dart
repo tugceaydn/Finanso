@@ -24,10 +24,14 @@ class Chart extends StatelessWidget {
       ),
       primaryYAxis: NumericAxis(
         isVisible: false,
-        initialVisibleMinimum: data
+        minimum: data
                 .map((e) => e['close'] as double)
-                .reduce((value, element) => element < value ? element : value) -
-            50,
+                .reduce((value, element) => element < value ? element : value) *
+            0.93,
+        maximum: data
+                .map((e) => e['close'] as double)
+                .reduce((value, element) => element > value ? element : value) *
+            1.05,
       ),
       enableAxisAnimation: false,
       legend: const Legend(isVisible: true),

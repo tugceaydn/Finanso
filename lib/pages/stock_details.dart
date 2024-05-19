@@ -15,14 +15,6 @@ import 'package:stock_market/pages/transaction.dart';
 import '../components/styled_text.dart';
 import '../core/jwt_provider.dart';
 
-final Map<String, List<Map<String, dynamic>>> chartData = {
-  "1W": [],
-  "1M": [],
-  "1Y": [],
-  "5Y": [],
-  "Forecast": [],
-};
-
 class StockDetails extends StatefulWidget {
   final String symbol;
   const StockDetails({super.key, required this.symbol});
@@ -35,6 +27,14 @@ class _StockDetails extends State<StockDetails> {
   String? token;
   String? serverUrl = dotenv.env['SERVER_URL'];
 
+  Map<String, List<Map<String, dynamic>>> chartData = {
+    "1W": [],
+    "1M": [],
+    "1Y": [],
+    "5Y": [],
+    "Forecast": [],
+  };
+
   late String symbol;
   String selectedRange = '1W';
 
@@ -42,6 +42,20 @@ class _StockDetails extends State<StockDetails> {
 
   bool isLoading = true;
   bool isForecastLoading = false;
+
+  void _resetState() {
+    chartData = {
+      "1W": [],
+      "1M": [],
+      "1Y": [],
+      "5Y": [],
+      "Forecast": [],
+    };
+
+    isLoading = true;
+    isForecastLoading = false;
+    selectedRange = '1W';
+  }
 
   Future<void> _fetchStockData() async {
     if (!mounted) return;
@@ -483,17 +497,27 @@ class _StockDetails extends State<StockDetails> {
         children: [
           Expanded(
             child: StyledButton(
-              handlePress: () {
-                navigatorKey.currentState?.push(
+              isDisabled: stockData['amount'] == 0,
+              handlePress: () async {
+                bool shouldRemount = await navigatorKey.currentState?.push(
                   MaterialPageRoute(
                     builder: (context) => Transaction(
                       type: "sell",
                       logo: stockData["logo"],
                       name: stockData["name"],
                       symbol: stockData["company_ticker"],
+                      amount: stockData['amount'],
                     ),
                   ),
                 );
+
+                if (shouldRemount) {
+                  setState(() {
+                    _resetState();
+                  });
+
+                  _fetchStockData();
+                }
               },
               text: 'Enter Sell',
               type: 'delete',
@@ -502,17 +526,28 @@ class _StockDetails extends State<StockDetails> {
           const SizedBox(width: 12),
           Expanded(
             child: StyledButton(
-              handlePress: () {
-                navigatorKey.currentState?.push(
+              handlePress: () async {
+                bool shouldRemount = await navigatorKey.currentState?.push(
                   MaterialPageRoute(
                     builder: (context) => Transaction(
                       type: "buy",
                       logo: stockData["logo"],
                       name: stockData["name"],
                       symbol: stockData["company_ticker"],
+                      amount: stockData['amount'],
                     ),
                   ),
                 );
+
+                if (shouldRemount) {
+                  // set it to true
+
+                  setState(() {
+                    _resetState();
+                  });
+
+                  _fetchStockData();
+                }
               },
               text: 'Enter Buy',
               isActive: true,
@@ -541,7 +576,7 @@ class _StockDetails extends State<StockDetails> {
                           InkWell(
                             onTap: () {
                               chartData['Forecast'] = [];
-                              navigatorKey.currentState?.pop(context);
+                              Navigator.pop(context);
                             },
                             child: const Icon(Icons.arrow_back),
                           ),

@@ -306,22 +306,25 @@ class _ForYou extends State<ForYou> {
       children: stockList.entries.map(
         (e) {
           return i++ % 2 == 0
-              ? BlueSection(
-                  padding: 16,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      StyledText(
-                        text: e.key,
-                        type: 'title_bold',
-                      ),
-                      const SizedBox(height: 16),
-                      StyledList(
-                        stockDataList: e.value,
-                        onlySector: false,
-                        isCurrentPriceIncluded: false,
-                      ),
-                    ],
+              ? SizedBox(
+                  width: double.infinity,
+                  child: BlueSection(
+                    padding: 16,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        StyledText(
+                          text: e.key,
+                          type: 'title_bold',
+                        ),
+                        const SizedBox(height: 16),
+                        StyledList(
+                          stockDataList: e.value,
+                          onlySector: false,
+                          isCurrentPriceIncluded: false,
+                        ),
+                      ],
+                    ),
                   ),
                 )
               : Column(

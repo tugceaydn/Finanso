@@ -82,8 +82,8 @@ class _HomePage extends State<HomePage> {
     };
 
     try {
-      final response =
-          await http.get(Uri.parse('$serverUrl/investments'), headers: headers);
+      final response = await http.get(Uri.parse('$serverUrl/investments/'),
+          headers: headers);
       if (!mounted) return;
       setState(() {
         myInvestments = jsonDecode(response.body);
@@ -120,6 +120,7 @@ class _HomePage extends State<HomePage> {
 
     List<String> list =
         myInvestments["data"]["company_overviews"].keys.toList();
+
     dynamic body = {
       "company_tickers": list,
     };
