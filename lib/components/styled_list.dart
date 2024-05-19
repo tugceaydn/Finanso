@@ -65,6 +65,25 @@ class StyledList extends StatelessWidget {
                         fit: BoxFit.fitWidth,
                         width: 24.0,
                         height: 24.0,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 24,
+                            height: 24,
+                            alignment: Alignment.center,
+                            decoration: ShapeDecoration(
+                              color: Colors.black,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(4),
+                            child: StyledText(
+                              text: stockData['symbol'][0].toUpperCase(),
+                              type: 'button',
+                              color: Colors.white,
+                            ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(width: 8),

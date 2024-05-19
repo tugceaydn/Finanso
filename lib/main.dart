@@ -136,6 +136,7 @@ class _MainState extends State<Main> {
         unselectedItemColor: Colors.black,
         currentIndex: _selectedPageIndex,
         iconSize: 27,
+        type: BottomNavigationBarType.fixed,
         onTap: (value) {
           setState(() {
             _selectedPageIndex = value;

@@ -367,10 +367,16 @@ class _ForYou extends State<ForYou> {
           width: double.infinity,
           child: _selectedIndex == 0
               ? isNewsLoading
-                  ? const CircularProgress()
+                  ? const Padding(
+                      padding: EdgeInsets.all(32),
+                      child: CircularProgress(),
+                    )
                   : _renderNews()
               : isRecommendStockListLoading
-                  ? const CircularProgress()
+                  ? const Padding(
+                      padding: EdgeInsets.all(32),
+                      child: CircularProgress(),
+                    )
                   : _renderStockList(),
         ),
       ],

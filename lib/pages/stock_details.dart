@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:stock_market/components/chart.dart';
@@ -282,37 +283,55 @@ class _StockDetails extends State<StockDetails> {
   }
 
   Widget _renderTopSectionOfCard() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
       children: [
-        // Expanded(
-        // flex: 3,
-        // child:
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            ClipOval(
+              child: Image.network(
+                stockData['logo'],
+                fit: BoxFit.fitWidth,
+                width: 27.0,
+                height: 27.0,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 27,
+                    height: 27,
+                    alignment: Alignment.center,
+                    decoration: ShapeDecoration(
+                      color: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    child: StyledText(
+                      text: stockData['company_ticker'][0].toUpperCase(),
+                      type: 'button',
+                      color: Colors.white,
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: StyledText(
+                text: stockData['name'].toString(),
+                maximumLines: 1,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                SizedBox(
-                  height: 27,
-                  width: 27,
-                  child: CircleAvatar(
-                    backgroundColor: primarySmoke,
-                    backgroundImage: NetworkImage(stockData['logo']),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                StyledText(
-                  text: stockData['name'].toString(),
-                  maximumLines: 1,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 StyledText(
@@ -320,55 +339,36 @@ class _StockDetails extends State<StockDetails> {
                   type: 'title_bold',
                 ),
                 const SizedBox(width: 4),
-                Row(
-                  children: [
-                    !isForecastLoading
-                        ? Icon(
-                            isStockTrendIncrease
-                                ? Icons.arrow_outward_sharp
-                                : Icons.arrow_downward_rounded,
-                            color: isStockTrendIncrease ? greenSolid : redSolid,
-                          )
-                        : Container(),
-                    StyledText(
-                      text: isForecastLoading
-                          ? ''
-                          : gain >= 0
-                              ? '+${gain.toStringAsFixed(2)}%'
-                              : '${gain.toStringAsFixed(2)}%',
-                      color: isStockTrendIncrease ? greenSolid : redSolid,
-                    ),
-                  ],
+                Icon(
+                  isStockTrendIncrease
+                      ? Icons.arrow_outward_sharp
+                      : Icons.arrow_downward_rounded,
+                  color: isStockTrendIncrease ? greenSolid : redSolid,
                 ),
+                StyledText(
+                  text: gain >= 0
+                      ? '+${gain.toStringAsFixed(2)}%'
+                      : '${gain.toStringAsFixed(2)}%',
+                  color: isStockTrendIncrease ? greenSolid : redSolid,
+                ),
+                const SizedBox(width: 16),
               ],
             ),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 100),
+              child: StyledButton(
+                handlePress: () {
+                  setState(() {
+                    selectedRange = isForecastActive ? '1W' : 'Forecast';
+                    isForecastActive = !isForecastActive;
+                  });
+                },
+                text: 'Forecast',
+                isActive: isForecastActive,
+              ),
+            )
           ],
         ),
-        // ),
-        // Expanded(
-        //   flex: 2,
-        //   child:
-        SizedBox(
-          width: 120,
-          child: StyledButton(
-            handlePress: () {
-              setState(() {
-                selectedRange = isForecastActive ? '1W' : 'Forecast';
-                isForecastActive = !isForecastActive;
-
-                if (chartData['Forecast']!.isEmpty) {
-                  _fetchForecastData();
-                } else {
-                  gain = _calculateGain(range: 'Forecast');
-                  isStockTrendIncrease = gain >= 0;
-                }
-              });
-            },
-            text: 'Forecast',
-            isActive: isForecastActive,
-          ),
-        ),
-        //   )
       ],
     );
   }
